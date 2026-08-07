@@ -111,6 +111,7 @@
   }
   .stop-body{flex:1; min-width:0;}
   .stop-card > .stop-remove{margin-left:auto;}
+  .stop-card > .stop-remove + .stop-remove{margin-left:6px;}
   .stop-name{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 3px;}
   .stop-meta{font-size:12.5px; color:var(--washi-dim); display:flex; gap:14px; flex-wrap:wrap;}
   .stop-meta span{display:flex; align-items:center; gap:5px;}
@@ -175,6 +176,10 @@
   button:hover{background:var(--vermillion-soft);}
   .empty{font-size:12.5px; color:var(--washi-dim); font-style:italic; margin-top:14px;}
   .foot-note{font-size:12px; color:var(--washi-dim); margin-top:10px; line-height:1.6;}
+  .status-msg{font-size:12.5px; margin-top:10px; min-height:16px;}
+  .status-msg.ok{color:var(--moss);}
+  .status-msg.err{color:var(--vermillion-soft);}
+  button:disabled{opacity:.6; cursor:default;}
 
   /* --- Ottimizzazione smartphone --- */
   @media (max-width: 640px){
@@ -234,13 +239,14 @@
 
   <div class="add-panel">
     <h2>Aggiungi una tappa</h2>
-    <p>Scrivi qui il nome del posto per tenerne traccia nell'app. Per l'inserimento "intelligente" — giorno migliore e mezzo di trasporto calcolati su Google Maps — dillo a Claude in chat: verrà geolocalizzato e aggiunto al posto giusto con il timbro rosso, come per Yakiniku no GANSAN.</p>
+    <p>Scrivi il nome del posto: l'app lo cerca da sola, calcola il giorno più vicino in base alla vostra tappa di quel giorno e suggerisce il mezzo di trasporto. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
     <form id="addForm">
       <input type="text" id="stopInput" placeholder="Es. Nishiki Market" />
-      <button type="submit">Aggiungi</button>
+      <button type="submit" id="addBtn">Aggiungi</button>
     </form>
+    <div id="statusMsg"></div>
     <div id="pendingList"></div>
-    <p class="foot-note">Le tappe con timbro rosso sono già geolocalizzate e posizionate. Quelle con timbro grigio sono state aggiunte da voi e sono in attesa di essere posizionate in chat.</p>
+    <p class="foot-note">Le tappe con timbro rosso sono già posizionate automaticamente. Se la ricerca non trova il posto (nome poco chiaro o rete assente), resta in attesa con timbro grigio — puoi correggerne il nome e riprovare, oppure eliminarla.</p>
   </div>
 
 </div>
@@ -280,6 +286,13 @@ const confirmedStops = [
 
 const STORAGE_KEY = "pending_stops";
 const HIDDEN_KEY = "hidden_confirmed_stops";
+const AUTO_KEY = "auto_stops";
+
+// Collega ogni giorno della mappa al blocco corrispondente nella timeline
+const dayKeyToItineraryKey = {
+  "0":"0", "1":"1–2", "2":"1–2", "3":"3", "4":"4",
+  "5–6":"5–6", "7":"7", "8–9":"8–9", "10–17":"10–17", "18":"18", "19":"19"
+};
 
 // --- Percorsi giorno per giorno per la mappa ---
 // Ogni giorno: lista di tappe nell'ordine dello spostamento + eventuali tappe extra confermate
@@ -361,11 +374,13 @@ function renderMapDay(dayKey){
   const day = mapDays.find(d => d.key === dayKey);
   if(!day) return;
 
+  const autoStops = loadAutoStops().filter(s => s.mapDayKey === dayKey);
+  const allStops = [...day.stops, ...autoStops.map(s=>({name:s.name, lat:s.lat, lng:s.lng, type:"extra"}))];
   const latlngs = day.stops.map(s => [s.lat, s.lng]);
 
   L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(mapLayer);
 
-  day.stops.forEach(s=>{
+  allStops.forEach(s=>{
     const marker = L.circleMarker([s.lat, s.lng], {
       radius: 8,
       fillColor: colorFor(s.type),
@@ -376,7 +391,8 @@ function renderMapDay(dayKey){
     marker.bindPopup(`<strong>${s.name}</strong>`);
   });
 
-  leafletMap.fitBounds(latlngs, { padding:[30,30], maxZoom:12 });
+  const boundsPoints = allStops.map(s=>[s.lat, s.lng]);
+  leafletMap.fitBounds(boundsPoints, { padding:[30,30], maxZoom:12 });
 }
 
 function renderDaySelector(){
@@ -417,14 +433,40 @@ function removeConfirmedStop(name){
   render();
 }
 
+function loadAutoStops(){
+  try{
+    const raw = localStorage.getItem(AUTO_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function saveAutoStops(list){
+  try{
+    localStorage.setItem(AUTO_KEY, JSON.stringify(list));
+  }catch(e){
+    console.error("Impossibile salvare:", e);
+  }
+}
+
+function removeAutoStop(id){
+  const list = loadAutoStops().filter(s => s.id !== id);
+  saveAutoStops(list);
+  render();
+  renderMapDay(document.querySelector('.day-pill.active')?.dataset.key || mapDays[0].key);
+}
+
 function render(){
   const spine = document.getElementById('spine');
   const hidden = loadHiddenConfirmed();
+  const autoStops = loadAutoStops();
   spine.innerHTML = "";
   itinerary.forEach(block=>{
     const div = document.createElement('div');
     div.className = "day-block";
-    const stops = confirmedStops.filter(s=>s.attachTo === block.day && !hidden.includes(s.name));
+    const fixedStops = confirmedStops.filter(s=>s.attachTo === block.day && !hidden.includes(s.name));
+    const myStops = autoStops.filter(s=>s.itineraryKey === block.day);
     div.innerHTML = `
       <div class="node"></div>
       <div class="day-head">
@@ -433,7 +475,7 @@ function render(){
         <span class="day-city">${block.city}</span>
       </div>
       <p class="day-note">${block.note}</p>
-      ${stops.map(s=>`
+      ${fixedStops.map(s=>`
         <div class="stop-card">
           <div class="stamp">確</div>
           <div class="stop-body">
@@ -447,11 +489,27 @@ function render(){
           <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
+      ${myStops.map(s=>`
+        <div class="stop-card">
+          <div class="stamp">確</div>
+          <div class="stop-body">
+            <p class="stop-name">${s.name}</p>
+            <div class="stop-meta">
+              <span>📍 ${s.area}</span>
+              <span>🚶 ${s.transport}</span>
+            </div>
+          </div>
+          <button type="button" class="stop-remove" data-remove-auto="${s.id}" title="Rimuovi tappa">✕</button>
+        </div>
+      `).join("")}
     `;
     spine.appendChild(div);
   });
   spine.querySelectorAll('[data-remove-confirmed]').forEach(btn=>{
     btn.addEventListener('click', ()=> removeConfirmedStop(btn.dataset.removeConfirmed));
+  });
+  spine.querySelectorAll('[data-remove-auto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto));
   });
 }
 
@@ -476,7 +534,7 @@ async function renderPending(){
   const list = await loadPending();
   const el = document.getElementById('pendingList');
   if(list.length === 0){
-    el.innerHTML = `<p class="empty">Nessuna tappa in attesa. Aggiungine una qui sopra, oppure chiedi a Claude in chat.</p>`;
+    el.innerHTML = "";
     return;
   }
   el.innerHTML = list.map((name, i)=>`
@@ -484,8 +542,9 @@ async function renderPending(){
       <div class="stamp">?</div>
       <div class="stop-body">
         <p class="stop-name">${name}</p>
-        <div class="stop-meta"><span>In attesa di posizionamento — chiedi a Claude in chat</span></div>
+        <div class="stop-meta"><span>Non trovata — tocca per riprovare la ricerca</span></div>
       </div>
+      <button type="button" class="stop-remove" data-retry-pending="${i}" title="Riprova ricerca">↻</button>
       <button type="button" class="stop-remove" data-remove-pending="${i}" title="Rimuovi tappa">✕</button>
     </div>
   `).join("");
@@ -498,18 +557,131 @@ async function renderPending(){
       renderPending();
     });
   });
+  el.querySelectorAll('[data-retry-pending]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.dataset.retryPending, 10);
+      const current = await loadPending();
+      const name = current[idx];
+      current.splice(idx, 1);
+      await savePending(current);
+      renderPending();
+      document.getElementById('stopInput').value = name;
+      document.getElementById('addForm').dispatchEvent(new Event('submit', {cancelable:true}));
+    });
+  });
+}
+
+// --- Motore di posizionamento automatico ---
+
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function findNearestDay(lat, lng){
+  let best = null;
+  mapDays.forEach(day=>{
+    day.stops.forEach(s=>{
+      const d = haversineKm(lat, lng, s.lat, s.lng);
+      if(!best || d < best.dist){
+        best = { dist: d, mapDayKey: day.key, nearName: s.name };
+      }
+    });
+  });
+  return best;
+}
+
+function transportHint(distKm){
+  if(distKm < 1.2) return "A piedi (10-15 min)";
+  if(distKm < 8) return "Metro o treno locale";
+  if(distKm < 40) return "Treno regionale o bus";
+  if(distKm < 150) return "Treno con cambio (verificare tratta)";
+  return "Fuori zona — verificare collegamento aereo/Shinkansen";
+}
+
+async function geocodePlace(name){
+  const query = /giappone|japan/i.test(name) ? name : `${name}, Japan`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { "Accept-Language": "it" } });
+  if(!res.ok) throw new Error("Ricerca non riuscita");
+  const data = await res.json();
+  if(!data || !data.length) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+function setStatus(msg, kind){
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = "status-msg" + (kind ? " " + kind : "");
+  if(kind === "ok"){
+    setTimeout(()=>{ if(el.textContent === msg){ el.textContent = ""; el.className = "status-msg"; } }, 4000);
+  }
 }
 
 document.getElementById('addForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const input = document.getElementById('stopInput');
+  const btn = document.getElementById('addBtn');
   const val = input.value.trim();
   if(!val) return;
-  const list = await loadPending();
-  list.push(val);
-  await savePending(list);
-  input.value = "";
-  renderPending();
+
+  btn.disabled = true;
+  btn.textContent = "Cerco...";
+  setStatus("Sto cercando " + val + "...", "");
+
+  try{
+    const coords = await geocodePlace(val);
+    if(!coords){
+      throw new Error("not-found");
+    }
+    const nearest = findNearestDay(coords.lat, coords.lng);
+    const itineraryKey = dayKeyToItineraryKey[nearest.mapDayKey] || nearest.mapDayKey;
+    const dayBlock = itinerary.find(b => b.day === itineraryKey);
+
+    const entry = {
+      id: "auto_" + Date.now(),
+      name: val,
+      lat: coords.lat,
+      lng: coords.lng,
+      itineraryKey: itineraryKey,
+      mapDayKey: nearest.mapDayKey,
+      area: `Vicino a ${nearest.nearName} (~${nearest.dist.toFixed(1)} km)`,
+      transport: transportHint(nearest.dist)
+    };
+
+    const autoStops = loadAutoStops();
+    autoStops.push(entry);
+    saveAutoStops(autoStops);
+
+    input.value = "";
+    render();
+    renderDaySelector();
+    // Attiva il tab della mappa del giorno appena assegnato
+    const pill = document.querySelector(`.day-pill[data-key="${nearest.mapDayKey}"]`);
+    if(pill){
+      document.querySelectorAll('.day-pill').forEach(b=>b.classList.remove('active'));
+      pill.classList.add('active');
+    }
+    renderMapDay(nearest.mapDayKey);
+
+    setStatus(`Aggiunta al ${dayBlock ? "Giorno " + dayBlock.day : "giorno più vicino"} — ${entry.transport.toLowerCase()}.`, "ok");
+  }catch(err){
+    // Ricerca fallita: la tappa resta in attesa, correggibile manualmente
+    const list = await loadPending();
+    list.push(val);
+    await savePending(list);
+    input.value = "";
+    renderPending();
+    setStatus("Non trovato — controlla il nome. È stata messa in attesa qui sotto, riprova o correggi.", "err");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Aggiungi";
+  }
 });
 
 render();
