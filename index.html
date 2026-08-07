@@ -148,6 +148,14 @@
   .stop-card > .stop-remove + .stop-remove{margin-left:6px;}
   .stop-name{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 3px;}
   .stop-meta{font-size:12.5px; color:var(--washi-dim); display:flex; gap:14px; flex-wrap:wrap;}
+  .stop-move-row{display:flex; align-items:center; gap:8px; margin-top:8px;}
+  .stop-move-label{font-size:11px; color:var(--washi-dim); white-space:nowrap;}
+  .stop-move-select{
+    background:var(--indigo-950); border:1px solid var(--line); color:var(--washi);
+    padding:5px 8px; border-radius:6px; font-size:12px;
+    font-family:'Zen Kaku Gothic New',sans-serif; cursor:pointer; max-width:200px;
+  }
+  .stop-move-select:focus{outline:none; border-color:var(--gold);}
   .stop-meta span{display:flex; align-items:center; gap:5px;}
   .pending .stamp{border-color:var(--washi-dim); color:var(--washi-dim); transform:none;}
   .pending{border-style:dashed; opacity:.85;}
@@ -248,6 +256,7 @@
     .stop-card{padding:11px 12px; gap:10px;}
     .stamp{width:30px; height:30px; font-size:12.5px;}
     .stop-meta{flex-direction:column; gap:5px;}
+    .stop-move-select{max-width:none; flex:1;}
     .day-map{height:160px;}
     .countdown{gap:7px; margin-top:16px;}
     .countdown-unit{padding:8px 10px; min-width:52px;}
@@ -435,6 +444,35 @@ function escapeHtml(str){
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 const HIDDEN_KEY = "hidden_confirmed_stops";
+const MOVES_KEY = "confirmed_stop_moves";
+
+function loadMoves(){
+  try{ const raw = localStorage.getItem(MOVES_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch(e){ return {}; }
+}
+function saveMoves(obj){
+  try{ localStorage.setItem(MOVES_KEY, JSON.stringify(obj)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
+}
+function moveConfirmedStop(name, oldDay, newDay){
+  if(oldDay === newDay) return;
+  const moves = loadMoves();
+  moves[name] = newDay;
+  saveMoves(moves);
+  render();
+  refreshDayMap(oldDay);
+  refreshDayMap(newDay);
+}
+function moveAutoStop(id, oldDay, newDay){
+  if(oldDay === newDay) return;
+  const autoStops = loadAutoStops();
+  const item = autoStops.find(s => s.id === id);
+  if(item) item.itineraryKey = newDay;
+  saveAutoStops(autoStops);
+  render();
+  refreshDayMap(oldDay);
+  refreshDayMap(newDay);
+}
 const AUTO_KEY = "auto_stops";
 
 let dayMaps = {}; // day -> leaflet map instance (inizializzata pigramente)
@@ -557,13 +595,19 @@ function removeAutoStop(id, day){
 function render(){
   const spine = document.getElementById('spine');
   const hidden = loadHiddenConfirmed();
+  const moves = loadMoves();
   const autoStops = loadAutoStops();
   spine.innerHTML = "";
+
+  const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
 
   itineraryDays.forEach(block=>{
     const div = document.createElement('div');
     div.className = "day-block";
-    const fixedStops = confirmedStops.filter(s=>s.attachTo === block.day && !hidden.includes(s.name));
+    const fixedStops = confirmedStops.filter(s=>{
+      const effectiveDay = moves[s.name] || s.attachTo;
+      return effectiveDay === block.day && !hidden.includes(s.name);
+    });
     const myStops = autoStops.filter(s=>s.itineraryKey === block.day);
     div.innerHTML = `
       <div class="node"></div>
@@ -592,6 +636,10 @@ function render(){
               <span>🕒 ${s.when}</span>
               <span>🚶 ${s.transport}</span>
             </div>
+            <div class="stop-move-row">
+              <label class="stop-move-label">Sposta al giorno</label>
+              <select class="stop-move-select" data-move-confirmed="${s.name}" data-day="${block.day}">${dayOptions}</select>
+            </div>
           </div>
           <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
@@ -604,6 +652,10 @@ function render(){
             <div class="stop-meta">
               <span>📍 ${s.area}</span>
               <span>🚶 ${s.transport}</span>
+            </div>
+            <div class="stop-move-row">
+              <label class="stop-move-label">Sposta al giorno</label>
+              <select class="stop-move-select" data-move-auto="${s.id}" data-day="${block.day}">${dayOptions}</select>
             </div>
           </div>
           <button type="button" class="stop-remove" data-remove-auto="${s.id}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
@@ -619,6 +671,14 @@ function render(){
   });
   spine.querySelectorAll('[data-remove-auto]').forEach(btn=>{
     btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto, btn.dataset.day));
+  });
+  spine.querySelectorAll('[data-move-confirmed]').forEach(sel=>{
+    sel.value = sel.dataset.day;
+    sel.addEventListener('change', ()=> moveConfirmedStop(sel.dataset.moveConfirmed, sel.dataset.day, sel.value));
+  });
+  spine.querySelectorAll('[data-move-auto]').forEach(sel=>{
+    sel.value = sel.dataset.day;
+    sel.addEventListener('change', ()=> moveAutoStop(sel.dataset.moveAuto, sel.dataset.day, sel.value));
   });
 
   spine.querySelectorAll('[data-notes-day]').forEach(textarea=>{
