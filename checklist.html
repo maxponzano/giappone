@@ -93,6 +93,38 @@
     .wrap{padding:22px 14px 64px;}
     h1{font-size:24px;}
   }
+
+  .add-panel{margin-top:30px; border-top:1px solid var(--line); padding-top:22px;}
+  .add-panel h2{font-family:'Shippori Mincho',serif; font-size:17px; margin:0 0 14px; font-weight:700;}
+  .add-form{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;}
+  .add-form > div{flex:1; min-width:130px;}
+  input[type=text]{
+    width:100%; background:var(--indigo-950); border:1px solid var(--line);
+    color:var(--washi); padding:8px 10px; border-radius:7px; font-size:13px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  input[type=text]:focus{outline:none; border-color:var(--gold);}
+  button{
+    background:var(--vermillion); color:var(--washi); border:none; padding:9px 16px;
+    border-radius:7px; font-size:13px; font-weight:700; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  button:hover{background:var(--vermillion-soft);}
+
+  .chart-panel{margin-top:30px; border-top:1px solid var(--line); padding-top:22px;}
+  .chart-panel h2{font-family:'Shippori Mincho',serif; font-size:17px; margin:0 0 16px; font-weight:700;}
+  .chart-row{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+  .chart-legend{display:flex; flex-direction:column; gap:8px; font-size:13px;}
+  .chart-legend-item{display:flex; align-items:center; gap:8px;}
+  .chart-dot{width:11px; height:11px; border-radius:50%; display:inline-block;}
+  .chart-legend-label{color:var(--washi);}
+  .chart-legend-count{color:var(--washi-dim); font-size:12px;}
+
+  select:disabled{opacity:.5; cursor:not-allowed;}
+
+  @media (max-width: 640px){
+    .add-form > div{min-width:100%;}
+  }
 </style>
 </head>
 <body>
@@ -104,6 +136,45 @@
 
   <div class="progress" id="progress"></div>
   <div id="list"></div>
+
+  <div class="add-panel">
+    <h2>Aggiungi una nuova azione</h2>
+    <form class="add-form" id="addActionForm">
+      <div>
+        <label class="field-label">Descrizione</label>
+        <input type="text" id="newActivity" placeholder="Es. Prenotare taxi per l'aeroporto" />
+      </div>
+      <div>
+        <label class="field-label">Responsabile</label>
+        <select id="newResponsible">
+          <option value="Max">Max</option>
+          <option value="Katia">Katia</option>
+          <option value="Entrambi">Entrambi</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Priorità</label>
+        <select id="newPriority">
+          <option value="alta">Alta</option>
+          <option value="media" selected>Media</option>
+          <option value="bassa">Bassa</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Da fare entro</label>
+        <input type="date" id="newDeadline" />
+      </div>
+      <button type="submit">Aggiungi</button>
+    </form>
+  </div>
+
+  <div class="chart-panel">
+    <h2>Colpo d'occhio</h2>
+    <div class="chart-row">
+      <svg id="pieChart" viewBox="0 0 120 120" width="130" height="130"></svg>
+      <div class="chart-legend" id="chartLegend"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -143,6 +214,7 @@ const checklistItems = [
 ];
 
 const OVERRIDES_KEY = "checklist_overrides_v2";
+const CUSTOM_KEY = "checklist_custom_items";
 const priorityLabels = {"alta":"Alta", "media":"Media", "bassa":"Bassa"};
 
 function loadOverrides(){
@@ -153,11 +225,23 @@ function saveOverrides(obj){
   try{ localStorage.setItem(OVERRIDES_KEY, JSON.stringify(obj)); }
   catch(e){ console.error("Impossibile salvare:", e); }
 }
+function loadCustomItems(){
+  try{ const raw = localStorage.getItem(CUSTOM_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveCustomItems(list){
+  try{ localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
+}
+function getAllItems(){
+  return [...checklistItems, ...loadCustomItems()];
+}
 function getItemState(item, overrides){
   const o = overrides[item.id] || {};
   return {
     status: o.status || item.status,
-    date: o.date || item.deadline
+    date: o.date || item.deadline,
+    priority: o.priority || item.priority
   };
 }
 function updateOverride(id, patch){
@@ -167,13 +251,56 @@ function updateOverride(id, patch){
   render();
 }
 
+function drawPieChart(doneCount, todoCount){
+  const total = doneCount + todoCount;
+  const svg = document.getElementById('pieChart');
+  const legend = document.getElementById('chartLegend');
+
+  if(total === 0){
+    svg.innerHTML = "";
+    legend.innerHTML = `<span class="chart-legend-count">Nessuna azione ancora.</span>`;
+    return;
+  }
+
+  const cx = 60, cy = 60, r = 52;
+  const donePct = doneCount / total;
+  const doneAngle = donePct * 360;
+
+  function polar(angleDeg){
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+  }
+
+  let paths = "";
+  if(doneCount === total){
+    paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#6E8C6A"/>`;
+  } else if(doneCount === 0){
+    paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#2A4066"/>`;
+  } else {
+    const [x1,y1] = polar(0);
+    const [x2,y2] = polar(doneAngle);
+    const largeArc = doneAngle > 180 ? 1 : 0;
+    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="#6E8C6A"/>`;
+    const [x3,y3] = polar(360);
+    paths += `<path d="M${cx},${cy} L${x2},${y2} A${r},${r} 0 ${1-largeArc} 1 ${x3},${y3} Z" fill="#2A4066"/>`;
+  }
+  svg.innerHTML = paths;
+
+  legend.innerHTML = `
+    <div class="chart-legend-item"><span class="chart-dot" style="background:#6E8C6A"></span><span class="chart-legend-label">Fatte</span><span class="chart-legend-count">${doneCount}</span></div>
+    <div class="chart-legend-item"><span class="chart-dot" style="background:#2A4066"></span><span class="chart-legend-label">Non fatte</span><span class="chart-legend-count">${todoCount}</span></div>
+  `;
+}
+
 function render(){
   const overrides = loadOverrides();
   const list = document.getElementById('list');
   const progressEl = document.getElementById('progress');
+  const allItems = getAllItems();
 
-  const states = checklistItems.map(i => ({ item:i, ...getItemState(i, overrides) }));
+  const states = allItems.map(i => ({ item:i, ...getItemState(i, overrides) }));
   const doneCount = states.filter(s => s.status === "fatto").length;
+  const todoCount = states.length - doneCount;
 
   progressEl.innerHTML = `${doneCount} di ${states.length} completate
     <div class="progress-bar"><div class="progress-fill" style="width:${(doneCount/states.length*100).toFixed(0)}%"></div></div>`;
@@ -183,7 +310,6 @@ function render(){
       <p class="item-activity">${s.item.activity}</p>
       <div class="item-meta">
         <span>${s.item.responsible}</span>
-        <span class="priority ${s.item.priority}">${priorityLabels[s.item.priority]}</span>
       </div>
       ${s.item.notes ? `<p class="item-notes">${s.item.notes}</p>` : ""}
       <div class="item-controls">
@@ -192,6 +318,14 @@ function render(){
           <select data-status-id="${s.item.id}" class="${s.status === 'fatto' ? 'status-fatto' : ''}">
             <option value="dafare" ${s.status === 'dafare' ? 'selected' : ''}>Da fare</option>
             <option value="fatto" ${s.status === 'fatto' ? 'selected' : ''}>Fatto</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Priorità</label>
+          <select data-priority-id="${s.item.id}" ${s.status === 'fatto' ? 'disabled' : ''}>
+            <option value="alta" ${s.priority === 'alta' ? 'selected' : ''}>Alta</option>
+            <option value="media" ${s.priority === 'media' ? 'selected' : ''}>Media</option>
+            <option value="bassa" ${s.priority === 'bassa' ? 'selected' : ''}>Bassa</option>
           </select>
         </div>
         <div>
@@ -205,10 +339,39 @@ function render(){
   list.querySelectorAll('[data-status-id]').forEach(sel=>{
     sel.addEventListener('change', ()=> updateOverride(sel.dataset.statusId, { status: sel.value }));
   });
+  list.querySelectorAll('[data-priority-id]').forEach(sel=>{
+    sel.addEventListener('change', ()=> updateOverride(sel.dataset.priorityId, { priority: sel.value }));
+  });
   list.querySelectorAll('[data-date-id]').forEach(inp=>{
     inp.addEventListener('change', ()=> updateOverride(inp.dataset.dateId, { date: inp.value }));
   });
+
+  drawPieChart(doneCount, todoCount);
 }
+
+document.getElementById('addActionForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const activity = document.getElementById('newActivity').value.trim();
+  const responsible = document.getElementById('newResponsible').value;
+  const priority = document.getElementById('newPriority').value;
+  const deadline = document.getElementById('newDeadline').value || new Date().toISOString().slice(0,10);
+  if(!activity) return;
+
+  const custom = loadCustomItems();
+  custom.push({
+    id: "custom_" + Date.now(),
+    activity, responsible, deadline, priority,
+    status: "dafare", notes: ""
+  });
+  saveCustomItems(custom);
+
+  document.getElementById('newActivity').value = "";
+  document.getElementById('newResponsible').value = "Max";
+  document.getElementById('newPriority').value = "media";
+  document.getElementById('newDeadline').value = "";
+
+  render();
+});
 
 render();
 </script>
