@@ -69,6 +69,18 @@
   }
   .summary-settlement.even{color:var(--moss);}
 
+  .payments-panel{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:24px;
+  }
+  .payments-panel h2{font-family:'Shippori Mincho',serif; font-size:15.5px; margin:0 0 5px; font-weight:700;}
+  .payments-sub{font-size:12px; color:var(--washi-dim); margin:0 0 14px; line-height:1.5;}
+  .payment-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px; color:var(--washi); padding:8px 0; border-top:1px solid var(--line);
+  }
+  .empty-payments{font-size:12px; color:var(--washi-dim); font-style:italic; margin-top:10px;}
+
   .item{
     background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
     border:1px solid var(--line); border-radius:10px;
@@ -131,6 +143,26 @@
     <div class="summary-settlement" id="settlement"></div>
   </div>
 
+  <div class="payments-panel">
+    <h2>Pagamenti diretti in contanti</h2>
+    <p class="payments-sub">Se uno ha già dato dei contanti all'altro fuori da queste spese, registralo qui: la cifra si sottrae subito dal debito calcolato sopra.</p>
+    <form class="add-form" id="paymentForm">
+      <div>
+        <label class="field-label">Chi ha dato i contanti</label>
+        <select id="paymentFrom">
+          <option value="Max">Max</option>
+          <option value="Katia">Katia</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Importo €</label>
+        <input type="number" id="paymentAmount" step="0.01" placeholder="0,00" />
+      </div>
+      <button type="submit">Registra pagamento</button>
+    </form>
+    <div id="paymentsList"></div>
+  </div>
+
   <div id="list"></div>
 
   <div class="add-panel">
@@ -182,6 +214,20 @@ const baseItems = [
 
 const OVERRIDES_KEY = "budget_overrides";
 const CUSTOM_KEY = "budget_custom_items";
+const PAYMENTS_KEY = "budget_direct_payments";
+
+function loadPayments(){
+  try{ const raw = localStorage.getItem(PAYMENTS_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function savePayments(list){
+  try{ localStorage.setItem(PAYMENTS_KEY, JSON.stringify(list)); }
+  catch(e){ console.error(e); }
+}
+function removePayment(id){
+  savePayments(loadPayments().filter(p => p.id !== id));
+  render();
+}
 
 function loadOverrides(){
   try{ const raw = localStorage.getItem(OVERRIDES_KEY); return raw ? JSON.parse(raw) : {}; }
@@ -289,7 +335,15 @@ function render(){
   });
   const sharedTotal = maxPaidShared + katiaPaidShared;
   const halfShare = sharedTotal / 2;
-  const net = maxPaidShared - halfShare; // positivo: Max ha anticipato più della sua quota
+  let net = maxPaidShared - halfShare; // positivo: Katia deve a Max
+
+  // Applica i pagamenti diretti in contanti registrati
+  const payments = loadPayments();
+  payments.forEach(p=>{
+    const amt = parseFloat(p.amount) || 0;
+    if(p.from === "Max") net += amt;   // Max ha dato contanti a Katia: aumenta ciò che Katia gli deve
+    if(p.from === "Katia") net -= amt; // Katia ha dato contanti a Max: riduce ciò che deve a Max
+  });
 
   const settlementEl = document.getElementById('settlement');
   if(Math.abs(net) < 0.01){
@@ -301,6 +355,22 @@ function render(){
   } else {
     settlementEl.className = "summary-settlement";
     settlementEl.textContent = `Max deve a Katia ${fmtEuro(Math.abs(net))}`;
+  }
+
+  // Elenco pagamenti diretti registrati
+  const paymentsList = document.getElementById('paymentsList');
+  if(payments.length === 0){
+    paymentsList.innerHTML = `<p class="empty-payments">Nessun pagamento diretto registrato.</p>`;
+  } else {
+    paymentsList.innerHTML = payments.map(p => `
+      <div class="payment-row">
+        <span>${p.from} → ${p.to}: ${fmtEuro(parseFloat(p.amount)||0)}</span>
+        <button type="button" class="item-remove" data-remove-payment="${p.id}" title="Rimuovi">✕</button>
+      </div>
+    `).join("");
+    paymentsList.querySelectorAll('[data-remove-payment]').forEach(btn=>{
+      btn.addEventListener('click', ()=> removePayment(btn.dataset.removePayment));
+    });
   }
 }
 
@@ -321,6 +391,21 @@ document.getElementById('addForm').addEventListener('submit', (e)=>{
   document.getElementById('newPaidBy').value = "";
   document.getElementById('newSplit').checked = true;
 
+  render();
+});
+
+document.getElementById('paymentForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const from = document.getElementById('paymentFrom').value;
+  const to = from === "Max" ? "Katia" : "Max";
+  const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+  if(amount <= 0) return;
+
+  const payments = loadPayments();
+  payments.push({ id: "pay_" + Date.now(), from, to, amount });
+  savePayments(payments);
+
+  document.getElementById('paymentAmount').value = "";
   render();
 });
 
