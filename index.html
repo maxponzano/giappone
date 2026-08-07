@@ -56,6 +56,27 @@
   }
   .sub{color:var(--washi-dim); font-size:14.5px; margin:0;}
 
+  .countdown{
+    display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;
+  }
+  .countdown-unit{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px;
+    padding:10px 16px; text-align:center; min-width:64px;
+  }
+  .countdown-num{
+    font-family:'Shippori Mincho',serif; font-weight:700; font-size:24px;
+    color:var(--gold); line-height:1.1; display:block;
+  }
+  .countdown-label{
+    font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--washi-dim); margin-top:2px; display:block;
+  }
+  .countdown-done{
+    font-family:'Shippori Mincho',serif; font-size:15px; color:var(--vermillion-soft);
+    font-weight:700;
+  }
+
   .cover-photo{
     width:100%; border-radius:12px; overflow:hidden; margin-top:22px;
     border:1px solid var(--line);
@@ -186,6 +207,12 @@
     font-family:'Zen Kaku Gothic New',sans-serif;
   }
   input[type=text]:focus{outline:none; border-color:var(--gold);}
+  select{
+    background:var(--indigo-900); border:1px solid var(--line);
+    color:var(--washi); padding:11px 13px; border-radius:8px; font-size:14px;
+    font-family:'Zen Kaku Gothic New',sans-serif; cursor:pointer;
+  }
+  select:focus{outline:none; border-color:var(--gold);}
   button{
     background:var(--vermillion); color:var(--washi); border:none; padding:11px 18px;
     border-radius:8px; font-size:14px; font-weight:700; cursor:pointer;
@@ -214,8 +241,13 @@
     .stamp{width:30px; height:30px; font-size:12.5px;}
     .stop-meta{flex-direction:column; gap:5px;}
     .day-map{height:160px;}
+    .countdown{gap:7px; margin-top:16px;}
+    .countdown-unit{padding:8px 10px; min-width:52px;}
+    .countdown-num{font-size:19px;}
+    .countdown-label{font-size:9.5px;}
     form{flex-direction:column;}
     input[type=text]{width:100%; min-width:0; font-size:16px; padding:13px 14px;}
+    select{width:100%; font-size:16px; padding:13px 14px;}
     button{width:100%; padding:14px 18px; font-size:15px;}
     .add-panel{margin-top:34px; padding-top:22px;}
   }
@@ -232,6 +264,7 @@
     <p class="eyebrow">Diario di viaggio</p>
     <h1>Giappone, 10–29 settembre 2026</h1>
     <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto — con mappa di ogni singola giornata.</p>
+    <div class="countdown" id="countdown"></div>
   </header>
 
   <div class="cover-photo">
@@ -249,9 +282,10 @@
 
   <div class="add-panel">
     <h2>Aggiungi una tappa</h2>
-    <p>Scrivi il nome del posto: l'app lo cerca da sola, calcola il giorno più vicino e suggerisce il mezzo di trasporto. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
+    <p>Scrivi il nome del posto: l'app lo cerca da sola e calcola il giorno più vicino. Se preferisci scegliere tu il giorno, selezionalo dal menu. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
     <form id="addForm">
       <input type="text" id="stopInput" placeholder="Es. Nishiki Market" />
+      <select id="daySelect"></select>
       <button type="submit" id="addBtn">Aggiungi</button>
     </form>
     <div id="statusMsg" class="status-msg"></div>
@@ -606,6 +640,23 @@ function haversineKm(lat1,lng1,lat2,lng2){
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function findNearestOnDay(lat, lng, dayKey){
+  const day = itineraryDays.find(d => d.day === dayKey);
+  if(!day || !day.stops.length) return { dist:0, nearName: day ? day.city : "" };
+  let best = null;
+  day.stops.forEach(s=>{
+    const d = haversineKm(lat, lng, s.lat, s.lng);
+    if(!best || d < best.dist) best = { dist:d, nearName:s.name };
+  });
+  return best;
+}
+
+function populateDaySelect(){
+  const sel = document.getElementById('daySelect');
+  sel.innerHTML = `<option value="">Giorno automatico</option>` +
+    itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
+}
+
 function findNearestDay(lat, lng){
   let best = null;
   itineraryDays.forEach(day=>{
@@ -696,8 +747,10 @@ async function renderPending(){
 document.getElementById('addForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const input = document.getElementById('stopInput');
+  const daySelect = document.getElementById('daySelect');
   const btn = document.getElementById('addBtn');
   const val = input.value.trim();
+  const chosenDay = daySelect.value; // "" = automatico
   if(!val) return;
 
   btn.disabled = true;
@@ -705,20 +758,39 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
   setStatus("Sto cercando " + val + "...", "");
 
   try{
-    const coords = await geocodePlace(val);
+    let coords = await geocodePlace(val);
+
+    if(!coords && chosenDay){
+      // Ricerca fallita ma giorno scelto a mano: posiziona comunque, in modo approssimato
+      const day = itineraryDays.find(d => d.day === chosenDay);
+      if(day && day.stops.length){
+        coords = { lat: day.stops[0].lat, lng: day.stops[0].lng, approx:true };
+      }
+    }
     if(!coords) throw new Error("not-found");
 
-    const nearest = findNearestDay(coords.lat, coords.lng);
-    const dayBlock = itineraryDays.find(b => b.day === nearest.day);
+    let targetDay, nearInfo;
+    if(chosenDay){
+      targetDay = chosenDay;
+      nearInfo = coords.approx
+        ? { dist:0, nearName: itineraryDays.find(d=>d.day===chosenDay).city }
+        : findNearestOnDay(coords.lat, coords.lng, chosenDay);
+    } else {
+      const nearest = findNearestDay(coords.lat, coords.lng);
+      targetDay = nearest.day;
+      nearInfo = nearest;
+    }
 
     const entry = {
       id: "auto_" + Date.now(),
       name: val,
       lat: coords.lat,
       lng: coords.lng,
-      itineraryKey: nearest.day,
-      area: `Vicino a ${nearest.nearName} (~${nearest.dist.toFixed(1)} km)`,
-      transport: transportHint(nearest.dist)
+      itineraryKey: targetDay,
+      area: coords.approx
+        ? "Posizione esatta non trovata — verificare manualmente"
+        : `Vicino a ${nearInfo.nearName} (~${nearInfo.dist.toFixed(1)} km)`,
+      transport: coords.approx ? "Da verificare" : transportHint(nearInfo.dist)
     };
 
     const autoStops = loadAutoStops();
@@ -726,12 +798,13 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
     saveAutoStops(autoStops);
 
     input.value = "";
+    daySelect.value = "";
     render();
 
-    setStatus(`Aggiunta al Giorno ${nearest.day} — ${entry.transport.toLowerCase()}.`, "ok");
+    setStatus(`Aggiunta al Giorno ${targetDay} — ${entry.transport.toLowerCase()}.`, "ok");
 
     // Scorri alla giornata appena aggiornata
-    const target = document.querySelector(`.day-map[data-day="${nearest.day}"]`);
+    const target = document.querySelector(`.day-map[data-day="${targetDay}"]`);
     if(target) target.closest('.day-block').scrollIntoView({ behavior:"smooth", block:"center" });
   }catch(err){
     const list = await loadPending();
@@ -746,8 +819,37 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
   }
 });
 
+// --- Conto alla rovescia verso la partenza (10 settembre 2026) ---
+const DEPARTURE_DATE = new Date("2026-09-10T00:00:00");
+
+function updateCountdown(){
+  const el = document.getElementById('countdown');
+  const now = new Date();
+  const diff = DEPARTURE_DATE - now;
+
+  if(diff <= 0){
+    el.innerHTML = `<span class="countdown-done">旅の始まり — Buon viaggio! 🎌</span>`;
+    return;
+  }
+
+  const days = Math.floor(diff / (1000*60*60*24));
+  const hours = Math.floor((diff / (1000*60*60)) % 24);
+  const minutes = Math.floor((diff / (1000*60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+
+  el.innerHTML = `
+    <div class="countdown-unit"><span class="countdown-num">${days}</span><span class="countdown-label">Giorni</span></div>
+    <div class="countdown-unit"><span class="countdown-num">${hours}</span><span class="countdown-label">Ore</span></div>
+    <div class="countdown-unit"><span class="countdown-num">${minutes}</span><span class="countdown-label">Min</span></div>
+    <div class="countdown-unit"><span class="countdown-num">${seconds}</span><span class="countdown-label">Sec</span></div>
+  `;
+}
+
+populateDaySelect();
 render();
 renderPending();
+updateCountdown();
+setInterval(updateCountdown, 1000);
 </script>
 </body>
 </html>
