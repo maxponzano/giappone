@@ -153,6 +153,12 @@
   }
   .leaflet-popup-tip{background:var(--indigo-800);}
   .leaflet-popup-content{font-size:13px; margin:10px 12px;}
+  .map-label{
+    background:rgba(14,23,40,0.88); border:1px solid var(--line); color:var(--washi);
+    font-family:'Zen Kaku Gothic New',sans-serif; font-size:11.5px; font-weight:500;
+    padding:2px 7px; border-radius:5px; box-shadow:none; white-space:nowrap;
+  }
+  .map-label::before{border-top-color:rgba(14,23,40,0.88) !important;}
 
   .add-panel{
     margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
@@ -389,6 +395,12 @@ function renderMapDay(dayKey){
       fillOpacity: 1
     }).addTo(mapLayer);
     marker.bindPopup(`<strong>${s.name}</strong>`);
+    marker.bindTooltip(s.name, {
+      permanent: true,
+      direction: "top",
+      offset: [0, -8],
+      className: "map-label"
+    });
   });
 
   const boundsPoints = allStops.map(s=>[s.lat, s.lng]);
