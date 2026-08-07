@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0E1728" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Checklist pre-partenza — Giappone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-950:#0E1728;
+    --indigo-900:#131F38;
+    --indigo-800:#1C2E4E;
+    --washi:#F1ECDF;
+    --washi-dim:#C9C2AE;
+    --vermillion:#C1440E;
+    --vermillion-soft:#E0693A;
+    --gold:#C9A24B;
+    --moss:#6E8C6A;
+    --line: rgba(241,236,223,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    color:var(--washi);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(201,162,75,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(193,68,14,0.08), transparent 55%),
+      var(--indigo-950);
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:720px; margin:0 auto; padding:36px 20px 80px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+  .nav-link{
+    display:flex; width:fit-content; align-items:center; gap:6px;
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:8px 14px; border-radius:20px; font-size:12.5px; text-decoration:none;
+    font-family:'Zen Kaku Gothic New',sans-serif; margin-bottom:18px;
+  }
+  .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .eyebrow{
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:"旅"; font-family:'Shippori Mincho',serif; font-size:15px; color:var(--vermillion-soft);}
+  h1{
+    font-family:'Shippori Mincho', serif; font-weight:700;
+    font-size: clamp(24px,5vw,32px); margin:0 0 6px; line-height:1.15;
+  }
+  .sub{color:var(--washi-dim); font-size:14px; margin:0 0 24px;}
+
+  .progress{font-size:12.5px; color:var(--washi-dim); margin:0 0 20px;}
+  .progress-bar{height:6px; background:var(--indigo-900); border-radius:3px; overflow:hidden; margin-top:6px;}
+  .progress-fill{height:100%; background:var(--moss); border-radius:3px; transition:width .25s;}
+
+  .item{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .item.done{opacity:.6;}
+  .item-activity{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 8px;}
+  .item.done .item-activity{text-decoration:line-through;}
+  .item-meta{font-size:11.5px; color:var(--washi-dim); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
+  .priority{
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    padding:1px 7px; border-radius:10px;
+  }
+  .priority.alta{background:rgba(193,68,14,0.18); color:var(--vermillion-soft);}
+  .priority.media{background:rgba(201,162,75,0.18); color:var(--gold);}
+  .priority.bassa{background:rgba(110,140,106,0.18); color:var(--moss);}
+  .item-notes{font-size:12px; color:var(--washi-dim); font-style:italic; margin:0 0 10px;}
+
+  .item-controls{display:flex; gap:8px; flex-wrap:wrap;}
+  .item-controls > div{flex:1; min-width:130px;}
+  .field-label{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--washi-dim); margin:0 0 4px; display:block;}
+  select, input[type=date]{
+    width:100%; background:var(--indigo-950); border:1px solid var(--line);
+    color:var(--washi); padding:8px 10px; border-radius:7px; font-size:13px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  select:focus, input[type=date]:focus{outline:none; border-color:var(--gold);}
+  select.status-fatto{border-color:var(--moss); color:var(--moss);}
+
+  @media (max-width: 640px){
+    .wrap{padding:22px 14px 64px;}
+    h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="nav-link">← Torna all'itinerario</a>
+  <p class="eyebrow">Prima di partire</p>
+  <h1>Checklist pre-partenza</h1>
+  <p class="sub">Documenti, prenotazioni, budget, casa e bagagli — modifica stato e data direttamente qui.</p>
+
+  <div class="progress" id="progress"></div>
+  <div id="list"></div>
+</div>
+
+<script>
+const checklistItems = [
+  {id:"c1", activity:"Verificare validità passaporto Max", responsible:"Max", deadline:"2026-05-31", priority:"alta", status:"dafare", notes:"Appuntamento il 7 agosto"},
+  {id:"c2", activity:"Verificare validità passaporto Katia", responsible:"Katia", deadline:"2026-05-31", priority:"alta", status:"fatto", notes:""},
+  {id:"c3", activity:"Richiedere patente internazionale", responsible:"Max", deadline:"2026-06-30", priority:"alta", status:"dafare", notes:"Necessaria per guidare in Giappone"},
+  {id:"c4", activity:"Creare copie digitali dei documenti", responsible:"Max", deadline:"2026-08-15", priority:"media", status:"fatto", notes:"Salvare su Drive e telefoni"},
+  {id:"c5", activity:"Stampare conferme e numeri di emergenza", responsible:"Max", deadline:"2026-09-05", priority:"media", status:"dafare", notes:""},
+  {id:"c6", activity:"Confermare voli andata e ritorno", responsible:"Max", deadline:"2026-02-28", priority:"alta", status:"fatto", notes:"Partenza 10 settembre; rientro 28/29 settembre"},
+  {id:"c7", activity:"Confermare tutti gli hotel", responsible:"Max", deadline:"2026-04-30", priority:"alta", status:"dafare", notes:""},
+  {id:"c8", activity:"Prenotare voli interni", responsible:"Max", deadline:"2026-05-31", priority:"alta", status:"dafare", notes:"Se previsti nell'itinerario"},
+  {id:"c9", activity:"Prenotare auto a Miyakojima", responsible:"Max", deadline:"2026-06-30", priority:"alta", status:"dafare", notes:""},
+  {id:"c10", activity:"Prenotare treni e trasferimenti principali", responsible:"Katia", deadline:"2026-07-31", priority:"media", status:"dafare", notes:"Valutare pass regionali/JR"},
+  {id:"c11", activity:"Prenotare attrazioni con ingresso limitato", responsible:"Katia", deadline:"2026-07-31", priority:"media", status:"dafare", notes:"TeamLab, musei, esperienze"},
+  {id:"c12", activity:"Selezionare ristoranti speciali", responsible:"Katia", deadline:"2026-08-15", priority:"bassa", status:"dafare", notes:""},
+  {id:"c13", activity:"Verificare copertura assicurazione viaggio", responsible:"Entrambi", deadline:"2026-03-31", priority:"alta", status:"dafare", notes:"Annullamento, bagaglio, assistenza sanitaria"},
+  {id:"c14", activity:"Definire budget complessivo del viaggio", responsible:"Entrambi", deadline:"2026-04-30", priority:"alta", status:"dafare", notes:""},
+  {id:"c15", activity:"Verificare carte abilitate all'estero", responsible:"Max", deadline:"2026-08-15", priority:"alta", status:"dafare", notes:""},
+  {id:"c16", activity:"Controllare limiti carte e plafond", responsible:"Max", deadline:"2026-08-15", priority:"media", status:"dafare", notes:""},
+  {id:"c17", activity:"Decidere contanti in yen da portare", responsible:"Entrambi", deadline:"2026-09-01", priority:"media", status:"dafare", notes:""},
+  {id:"c18", activity:"Acquistare/attivare eSIM", responsible:"Max", deadline:"2026-09-05", priority:"alta", status:"dafare", notes:""},
+  {id:"c19", activity:"Scaricare mappe offline", responsible:"Max", deadline:"2026-09-05", priority:"media", status:"dafare", notes:""},
+  {id:"c20", activity:"Installare traduttore e lingua offline", responsible:"Entrambi", deadline:"2026-09-05", priority:"media", status:"fatto", notes:""},
+  {id:"c21", activity:"Verificare power bank e adattatori", responsible:"Max", deadline:"2026-09-05", priority:"media", status:"dafare", notes:""},
+  {id:"c22", activity:"Preparare farmaci personali e ricette", responsible:"Katia", deadline:"2026-09-05", priority:"alta", status:"dafare", notes:""},
+  {id:"c23", activity:"Preparare kit medico da viaggio", responsible:"Katia", deadline:"2026-09-05", priority:"media", status:"dafare", notes:""},
+  {id:"c24", activity:"Comunicare assenza a clienti e collaboratori", responsible:"Entrambi", deadline:"2026-08-31", priority:"alta", status:"fatto", notes:""},
+  {id:"c25", activity:"Impostare risposta automatica email", responsible:"Max", deadline:"2026-09-11", priority:"media", status:"dafare", notes:""},
+  {id:"c26", activity:"Organizzare piante, posta e controlli casa", responsible:"Entrambi", deadline:"2026-09-05", priority:"media", status:"dafare", notes:""},
+  {id:"c27", activity:"Svuotare alimenti deperibili dal frigorifero", responsible:"Katia", deadline:"2026-09-11", priority:"bassa", status:"dafare", notes:""},
+  {id:"c28", activity:"Controllare acqua, finestre, allarme e utenze", responsible:"Max", deadline:"2026-09-12", priority:"alta", status:"dafare", notes:""},
+  {id:"c29", activity:"Completare checklist valigie", responsible:"Entrambi", deadline:"2026-09-10", priority:"alta", status:"dafare", notes:""},
+  {id:"c30", activity:"Pesare i bagagli", responsible:"Max", deadline:"2026-09-11", priority:"media", status:"dafare", notes:""},
+  {id:"c31", activity:"Effettuare check-in online", responsible:"Max", deadline:"2026-09-11", priority:"alta", status:"dafare", notes:""},
+  {id:"c32", activity:"Controllare orari, terminal e trasferimento aeroporto", responsible:"Entrambi", deadline:"2026-09-11", priority:"alta", status:"dafare", notes:""},
+];
+
+const OVERRIDES_KEY = "checklist_overrides_v2";
+const priorityLabels = {"alta":"Alta", "media":"Media", "bassa":"Bassa"};
+
+function loadOverrides(){
+  try{ const raw = localStorage.getItem(OVERRIDES_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch(e){ return {}; }
+}
+function saveOverrides(obj){
+  try{ localStorage.setItem(OVERRIDES_KEY, JSON.stringify(obj)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
+}
+function getItemState(item, overrides){
+  const o = overrides[item.id] || {};
+  return {
+    status: o.status || item.status,
+    date: o.date || item.deadline
+  };
+}
+function updateOverride(id, patch){
+  const overrides = loadOverrides();
+  overrides[id] = { ...(overrides[id]||{}), ...patch };
+  saveOverrides(overrides);
+  render();
+}
+
+function render(){
+  const overrides = loadOverrides();
+  const list = document.getElementById('list');
+  const progressEl = document.getElementById('progress');
+
+  const states = checklistItems.map(i => ({ item:i, ...getItemState(i, overrides) }));
+  const doneCount = states.filter(s => s.status === "fatto").length;
+
+  progressEl.innerHTML = `${doneCount} di ${states.length} completate
+    <div class="progress-bar"><div class="progress-fill" style="width:${(doneCount/states.length*100).toFixed(0)}%"></div></div>`;
+
+  list.innerHTML = states.map(s => `
+    <div class="item ${s.status === 'fatto' ? 'done' : ''}">
+      <p class="item-activity">${s.item.activity}</p>
+      <div class="item-meta">
+        <span>${s.item.responsible}</span>
+        <span class="priority ${s.item.priority}">${priorityLabels[s.item.priority]}</span>
+      </div>
+      ${s.item.notes ? `<p class="item-notes">${s.item.notes}</p>` : ""}
+      <div class="item-controls">
+        <div>
+          <label class="field-label">Stato</label>
+          <select data-status-id="${s.item.id}" class="${s.status === 'fatto' ? 'status-fatto' : ''}">
+            <option value="dafare" ${s.status === 'dafare' ? 'selected' : ''}>Da fare</option>
+            <option value="fatto" ${s.status === 'fatto' ? 'selected' : ''}>Fatto</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">${s.status === 'fatto' ? 'Completata il' : 'Da fare entro'}</label>
+          <input type="date" data-date-id="${s.item.id}" value="${s.date}" />
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  list.querySelectorAll('[data-status-id]').forEach(sel=>{
+    sel.addEventListener('change', ()=> updateOverride(sel.dataset.statusId, { status: sel.value }));
+  });
+  list.querySelectorAll('[data-date-id]').forEach(inp=>{
+    inp.addEventListener('change', ()=> updateOverride(inp.dataset.dateId, { date: inp.value }));
+  });
+}
+
+render();
+</script>
+</body>
+</html>
