@@ -133,6 +133,28 @@
   .day-map .map-placeholder{
     font-size:11.5px; color:var(--washi-dim); font-style:italic;
   }
+
+  .day-details{
+    margin-top:12px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  .day-details summary{
+    padding:10px 14px; font-size:12.5px; font-weight:700; color:var(--gold);
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px;
+    background:var(--indigo-900);
+  }
+  .day-details summary::-webkit-details-marker{display:none;}
+  .day-details summary::before{content:"▸"; font-size:10px; transition:transform .15s;}
+  .day-details[open] summary::before{transform:rotate(90deg);}
+  .day-details-body{padding:12px 14px 14px;}
+  .day-desc{font-size:13px; color:var(--washi-dim); line-height:1.6; margin:0 0 12px;}
+  .day-notes-label{font-size:11.5px; color:var(--gold); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px; font-weight:700;}
+  .day-notes{
+    width:100%; min-height:70px; background:var(--indigo-950); border:1px solid var(--line);
+    color:var(--washi); padding:9px 11px; border-radius:8px; font-size:13px;
+    font-family:'Zen Kaku Gothic New',sans-serif; resize:vertical;
+  }
+  .day-notes:focus{outline:none; border-color:var(--gold);}
+  .day-notes-saved{font-size:11px; color:var(--moss); margin-top:5px; min-height:14px;}
   .leaflet-popup-content-wrapper{
     background:var(--indigo-800); color:var(--washi); border-radius:8px;
     font-family:'Zen Kaku Gothic New',sans-serif;
@@ -242,87 +264,87 @@
 <script>
 // --- Un giorno per blocco, con date, note e punti per la mappa ---
 const itineraryDays = [
-  { day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)", stops:[
+  { day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)", desc:"Trasferimento in bus da casa a Milano Malpensa per il volo internazionale verso Tokyo Haneda.", stops:[
     {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"},
     {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
     {name:"Volo per Tokyo Haneda", lat:35.5494, lng:139.7798, type:"flight"}
   ]},
-  { day:"1", date:"11 set", city:"Tokyo", note:"Arrivo, trasferimento privato in hotel a Ginza", stops:[
+  { day:"1", date:"11 set", city:"Tokyo", note:"Arrivo, trasferimento privato in hotel a Ginza", desc:"Arrivo all'aeroporto di Tokyo e trasferimento privato in hotel (The Square Hotel Ginza, 5 min a piedi dalla stazione di Ginza). Ritiro del pacchetto di viaggio con IC Card, biglietti dei treni prenotati e WiFi portatile. Giornata in autonomia in base all'orario di arrivo — pasti non inclusi.", stops:[
     {name:"Aeroporto di Tokyo", lat:35.5494, lng:139.7798, type:"stay"},
     {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"}
   ]},
-  { day:"2", date:"12 set", city:"Tokyo", note:"Asakusa con guida, poi Harajuku e Shibuya in autonomia", stops:[
+  { day:"2", date:"12 set", city:"Tokyo", note:"Asakusa con guida, poi Harajuku e Shibuya in autonomia", desc:"Mattina con guida (4h, ritrovo in hotel alle 9:30) nel quartiere storico di Asakusa: Tempio Senso-ji, lanterne rosse, botteghe tradizionali sul fiume Sumida. Prosecuzione in autonomia verso Harajuku (Parco Yoyogi, Santuario Meiji Jingu) e Shibuya, il quartiere più dinamico di Tokyo. Colazione inclusa.", stops:[
     {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"},
     {name:"Asakusa", lat:35.7148, lng:139.7967, type:"day"},
     {name:"Shinjuku Gyoen", lat:35.6852, lng:139.7101, type:"extra"},
     {name:"Harajuku", lat:35.6702, lng:139.7026, type:"day"},
     {name:"Shibuya", lat:35.6595, lng:139.7005, type:"day"}
   ]},
-  { day:"3", date:"13 set", city:"Kamakura", note:"Gita in giornata (pernotto Tokyo) — Grande Buddha, poi Odaiba", stops:[
+  { day:"3", date:"13 set", city:"Kamakura", note:"Gita in giornata (pernotto Tokyo) — Grande Buddha, poi Odaiba", desc:"Gita in giornata a Kamakura: passeggiata lungo Omachi Dori, Santuario Hachimangu, Grande Buddha Amida (oltre 13 metri). Rientro a Tokyo nel pomeriggio e serata a Odaiba, con ingresso al Museo TeamLab Planets. Tratta raggiungibile con treni locali e IC Card (circa 50 min-1h). Colazione inclusa.", stops:[
     {name:"Tokyo", lat:35.6717, lng:139.7650, type:"stay"},
     {name:"Kamakura", lat:35.3193, lng:139.5466, type:"day"},
     {name:"Odaiba", lat:35.6267, lng:139.7752, type:"day"},
     {name:"Tokyo (rientro)", lat:35.6717, lng:139.7650, type:"stay"}
   ]},
-  { day:"4", date:"14 set", city:"Hakone", note:"Onsen e vedute sul Fuji, notte al ryokan Yama No Chaya", stops:[
+  { day:"4", date:"14 set", city:"Hakone", note:"Onsen e vedute sul Fuji, notte al ryokan Yama No Chaya", desc:"Partenza al mattino verso Hakone con Hakone Freepass e treno Romance Car riservato da Shinjuku (1h30). Giornata dedicata alle attrazioni della zona e alle viste sul Monte Fuji. Pernottamento al Ryokan Yama No Chaya, con onsen (bagni termali), cucina kaiseki a cena e colazione tradizionale giapponese. Colazione e cena incluse.", stops:[
     {name:"Tokyo (Shinjuku)", lat:35.6896, lng:139.7006, type:"stay"},
     {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"}
   ]},
-  { day:"5", date:"15 set", city:"Kyoto", note:"Da Hakone a Kyoto — quartiere di Gion, cerimonia del tè in kimono", stops:[
+  { day:"5", date:"15 set", city:"Kyoto", note:"Da Hakone a Kyoto — quartiere di Gion, cerimonia del tè in kimono", desc:"Trasferimento in Shinkansen da Odawara a Kyoto (2h05). Pomeriggio nel quartiere di Gion, l'antico quartiere delle geishe, con cerimonia del tè tradizionale indossando il kimono (spiegazioni in inglese). Serata libera a Gion o Pontocho, lungo il fiume Kamogawa. Colazione inclusa.", stops:[
     {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"},
     {name:"Kyoto (Gion)", lat:35.0037, lng:135.7752, type:"stay"}
   ]},
-  { day:"6", date:"16 set", city:"Kyoto", note:"Padiglione d'Oro e Ryoan-ji con guida, poi foresta di bambù ad Arashiyama", stops:[
+  { day:"6", date:"16 set", city:"Kyoto", note:"Padiglione d'Oro e Ryoan-ji con guida, poi foresta di bambù ad Arashiyama", desc:"Mattina con guida (4h, ritrovo in hotel alle 9:00 o 9:30): Padiglione d'Oro (Kinkaku-ji) e giardino zen di Ryoan-ji. Prosecuzione in autonomia verso Arashiyama — Tempio Tenryu-ji (patrimonio UNESCO) e foresta di bambù. Colazione inclusa.", stops:[
     {name:"Kyoto", lat:35.0116, lng:135.7681, type:"stay"},
     {name:"Padiglione d'Oro", lat:35.0394, lng:135.7292, type:"day"},
     {name:"Arashiyama", lat:35.0094, lng:135.6683, type:"day"},
     {name:"Yakiniku no GANSAN", lat:35.0074, lng:135.7712, type:"extra"}
   ]},
-  { day:"7", date:"17 set", city:"Nara", note:"Fushimi Inari Taisha al mattino, poi i cervi di Nara", stops:[
+  { day:"7", date:"17 set", city:"Nara", note:"Fushimi Inari Taisha al mattino, poi i cervi di Nara", desc:"Mattina al santuario Fushimi Inari Taisha, con i celebri mille torii rossi (reso famoso anche dal film Memorie di una Geisha). Prosecuzione verso Nara: i cervi del parco, il Museo Nazionale e il tempio Tōdaiji con la Grande Sala del Buddha. Le tratte si raggiungono con treni locali e IC Card; l'ordine delle tappe è invertibile. Colazione inclusa.", stops:[
     {name:"Kyoto (hotel)", lat:35.0116, lng:135.7681, type:"stay"},
     {name:"Fushimi Inari Taisha", lat:34.9671, lng:135.7727, type:"day"},
     {name:"Nara", lat:34.6851, lng:135.8048, type:"day"}
   ]},
-  { day:"8", date:"18 set", city:"Osaka", note:"Da Kyoto a Osaka — Castello di Osaka, Santuario di Sumiyoshi", stops:[
+  { day:"8", date:"18 set", city:"Osaka", note:"Da Kyoto a Osaka — Castello di Osaka, Santuario di Sumiyoshi", desc:"Trasferimento in treno da Kyoto a Osaka (28 min, 45 km). Visita al maestoso Castello di Osaka e possibilità di scoprire il Santuario di Sumiyoshi, uno dei più antichi del Giappone. Colazione inclusa.", stops:[
     {name:"Kyoto", lat:35.0116, lng:135.7681, type:"stay"},
     {name:"Osaka (Umeda)", lat:34.7025, lng:135.4959, type:"stay"},
     {name:"Castello di Osaka", lat:34.6873, lng:135.5262, type:"day"}
   ]},
-  { day:"9", date:"19 set", city:"Osaka", note:"Dotonbori e street food, eventuale gita a Kobe o Himeji", stops:[
+  { day:"9", date:"19 set", city:"Osaka", note:"Dotonbori e street food, eventuale gita a Kobe o Himeji", desc:"Giornata dedicata a Dotonbori, con le sue insegne luminose e lo street food tipico della 'cucina del Giappone'. Da qui è possibile valutare anche una gita a Kobe o Himeji, facilmente raggiungibili con treni locali. Colazione inclusa.", stops:[
     {name:"Osaka", lat:34.7025, lng:135.4959, type:"stay"},
     {name:"Dotonbori", lat:34.6687, lng:135.5013, type:"day"}
   ]},
-  { day:"10", date:"20 set", city:"Okinawa · Miyakojima", note:"Volo interno da Osaka a Miyakojima", stops:[
+  { day:"10", date:"20 set", city:"Okinawa · Miyakojima", note:"Volo interno da Osaka a Miyakojima", desc:"Volo interno da Osaka Itami a Miyakojima (Okinawa), circa 4h — orario indicativo 14:02-17:50, da confermare in base a disponibilità. Trasferimento privato dall'hotel all'aeroporto di Osaka incluso. Colazione inclusa.", stops:[
     {name:"Osaka (Itami)", lat:34.7855, lng:135.4382, type:"stay"},
     {name:"Miyakojima, Okinawa", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"11", date:"21 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+  { day:"11", date:"21 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", desc:"Giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Pernottamento prenotato in forma privata (non incluso nel pacchetto). Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"12", date:"22 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+  { day:"12", date:"22 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", desc:"Giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Pernottamento prenotato in forma privata (non incluso nel pacchetto). Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"13", date:"23 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+  { day:"13", date:"23 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", desc:"Giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Pernottamento prenotato in forma privata (non incluso nel pacchetto). Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"14", date:"24 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+  { day:"14", date:"24 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", desc:"Giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Pernottamento prenotato in forma privata (non incluso nel pacchetto). Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"15", date:"25 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+  { day:"15", date:"25 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", desc:"Giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Pernottamento prenotato in forma privata (non incluso nel pacchetto). Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"16", date:"26 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+  { day:"16", date:"26 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", desc:"Giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Pernottamento prenotato in forma privata (non incluso nel pacchetto). Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"17", date:"27 set", city:"Okinawa · Miyakojima", note:"Ultima giornata libera — mare e spiagge", stops:[
+  { day:"17", date:"27 set", city:"Okinawa · Miyakojima", note:"Ultima giornata libera — mare e spiagge", desc:"Ultima giornata libera a Miyakojima: relax tra acque cristalline, spiagge e paesaggi tropicali, da vivere secondo i propri ritmi. Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
   ]},
-  { day:"18", date:"28 set", city:"Tokyo", note:"Rientro da Miyakojima verso l'Italia", stops:[
+  { day:"18", date:"28 set", city:"Tokyo", note:"Rientro da Miyakojima verso l'Italia", desc:"Rientro da Miyakojima a Tokyo Haneda con volo interno (circa 2h50, orario indicativo 15:50-18:40, da confermare). Da qui proseguimento con il volo internazionale di ritorno verso l'Italia. Colazione inclusa.", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"},
     {name:"Tokyo (Haneda)", lat:35.5494, lng:139.7798, type:"stay"},
     {name:"Volo per Milano Malpensa", lat:45.6306, lng:8.7231, type:"flight"}
   ]},
-  { day:"19", date:"29 set", city:"Milano Malpensa", note:"Malpensa → Casa in FlixBus (bus da prenotare)", stops:[
+  { day:"19", date:"29 set", city:"Milano Malpensa", note:"Malpensa → Casa in FlixBus (bus da prenotare)", desc:"Arrivo a Milano Malpensa e trasferimento in bus fino a casa.", stops:[
     {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
     {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"}
   ]},
@@ -347,6 +369,25 @@ const confirmedStops = [
 ];
 
 const STORAGE_KEY = "pending_stops";
+const NOTES_KEY_PREFIX = "day_note_";
+
+function loadDayNote(day){
+  try{
+    return localStorage.getItem(NOTES_KEY_PREFIX + day) || "";
+  }catch(e){
+    return "";
+  }
+}
+function saveDayNote(day, text){
+  try{
+    localStorage.setItem(NOTES_KEY_PREFIX + day, text);
+  }catch(e){
+    console.error("Impossibile salvare la nota:", e);
+  }
+}
+function escapeHtml(str){
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
 const HIDDEN_KEY = "hidden_confirmed_stops";
 const AUTO_KEY = "auto_stops";
 
@@ -486,6 +527,15 @@ function render(){
         <span class="day-city">${block.city}</span>
       </div>
       <p class="day-note">${block.note}</p>
+      <details class="day-details" open>
+        <summary>Descrizione e note del giorno</summary>
+        <div class="day-details-body">
+          <p class="day-desc">${block.desc || ""}</p>
+          <p class="day-notes-label">Le vostre note</p>
+          <textarea class="day-notes" data-notes-day="${block.day}" placeholder="Scrivi qui appunti, orari, prenotazioni extra...">${escapeHtml(loadDayNote(block.day))}</textarea>
+          <p class="day-notes-saved" data-notes-status="${block.day}"></p>
+        </div>
+      </details>
       ${fixedStops.map(s=>`
         <div class="stop-card">
           <div class="stamp">確</div>
@@ -523,6 +573,22 @@ function render(){
   });
   spine.querySelectorAll('[data-remove-auto]').forEach(btn=>{
     btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto, btn.dataset.day));
+  });
+
+  spine.querySelectorAll('[data-notes-day]').forEach(textarea=>{
+    let debounceTimer;
+    textarea.addEventListener('input', ()=>{
+      const day = textarea.dataset.notesDay;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(()=>{
+        saveDayNote(day, textarea.value);
+        const status = spine.querySelector(`[data-notes-status="${day}"]`);
+        if(status){
+          status.textContent = "Salvato ✓";
+          setTimeout(()=>{ if(status.textContent === "Salvato ✓") status.textContent = ""; }, 2000);
+        }
+      }, 500);
+    });
   });
 
   initLazyMaps();
