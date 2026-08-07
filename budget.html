@@ -86,7 +86,8 @@
     border:1px solid var(--line); border-radius:10px;
     padding:14px 16px; margin-bottom:10px;
   }
-  .item-desc{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 10px;}
+  .item-desc{font-weight:700; font-size:14.5px; color:var(--washi); margin:0;}
+  .item-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px;}
   .item-controls{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;}
   .item-controls > div{flex:1; min-width:110px;}
   .field-label{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--washi-dim); margin:0 0 4px; display:block;}
@@ -215,6 +216,7 @@ const baseItems = [
 const OVERRIDES_KEY = "budget_overrides";
 const CUSTOM_KEY = "budget_custom_items";
 const PAYMENTS_KEY = "budget_direct_payments";
+const HIDDEN_KEY = "budget_hidden_items";
 
 function loadPayments(){
   try{ const raw = localStorage.getItem(PAYMENTS_KEY); return raw ? JSON.parse(raw) : []; }
@@ -245,11 +247,32 @@ function saveCustom(list){
   try{ localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); }
   catch(e){ console.error(e); }
 }
+function loadHiddenItems(){
+  try{ const raw = localStorage.getItem(HIDDEN_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveHiddenItems(list){
+  try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(list)); }
+  catch(e){ console.error(e); }
+}
+function deleteItem(id){
+  if(id.startsWith("custom_")){
+    saveCustom(loadCustom().filter(i => i.id !== id));
+  } else {
+    const hidden = loadHiddenItems();
+    if(!hidden.includes(id)) hidden.push(id);
+    saveHiddenItems(hidden);
+  }
+  render();
+}
 
 function getAllItems(){
   const overrides = loadOverrides();
   const custom = loadCustom();
-  const base = baseItems.map(i => ({ ...i, ...(overrides[i.id]||{}) }));
+  const hidden = loadHiddenItems();
+  const base = baseItems
+    .filter(i => !hidden.includes(i.id))
+    .map(i => ({ ...i, ...(overrides[i.id]||{}) }));
   return [...base, ...custom];
 }
 
@@ -282,7 +305,10 @@ function render(){
     const updateFn = isCustom ? "updateCustomField" : "updateBaseField";
     return `
     <div class="item">
-      <p class="item-desc">${i.desc}</p>
+      <div class="item-head">
+        <p class="item-desc">${i.desc}</p>
+        <button type="button" class="item-remove" data-remove="${i.id}" title="Elimina spesa">✕</button>
+      </div>
       <div class="item-controls">
         <div>
           <label class="field-label">Spesa €</label>
@@ -300,7 +326,6 @@ function render(){
           <input type="checkbox" data-field="split" data-id="${i.id}" data-fn="${updateFn}" ${i.split ? "checked":""} id="split_${i.id}" />
           <label for="split_${i.id}">Da dividere</label>
         </div>
-        ${isCustom ? `<button type="button" class="item-remove" data-remove="${i.id}" title="Rimuovi">✕</button>` : ""}
       </div>
     </div>
   `;
@@ -320,7 +345,7 @@ function render(){
     });
   });
   list.querySelectorAll('[data-remove]').forEach(btn=>{
-    btn.addEventListener('click', ()=> removeCustom(btn.dataset.remove));
+    btn.addEventListener('click', ()=> deleteItem(btn.dataset.remove));
   });
 
   // Totale e saldo
