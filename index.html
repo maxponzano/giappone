@@ -56,6 +56,15 @@
   }
   .sub{color:var(--washi-dim); font-size:14.5px; margin:0;}
 
+  .cover-photo{
+    width:100%; border-radius:12px; overflow:hidden; margin-top:22px;
+    border:1px solid var(--line);
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);
+  }
+  .cover-photo img{
+    width:100%; height:auto; display:block;
+  }
+
   .spine{position:relative; margin-top:38px; padding-left:26px;}
   .spine::before{
     content:""; position:absolute; left:5px; top:6px; bottom:6px; width:1px;
@@ -204,6 +213,10 @@
     <h1>Giappone, 10–29 settembre 2026</h1>
     <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto.</p>
   </header>
+
+  <div class="cover-photo">
+    <img src="cover.jpg" alt="Max e Katia in Giappone" />
+  </div>
 
   <div class="spine" id="spine"></div>
 
