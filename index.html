@@ -45,6 +45,14 @@
   }
 
   header{margin-bottom:34px;}
+  .nav-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
+  .nav-link{
+    display:flex; width:fit-content; align-items:center; gap:6px;
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:8px 14px; border-radius:20px; font-size:12.5px; text-decoration:none;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .nav-link:hover{border-color:var(--gold); color:var(--gold);}
   .eyebrow{
     font-size:12px; letter-spacing:.16em; text-transform:uppercase;
     color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:8px;
@@ -193,49 +201,6 @@
     filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));
   }
 
-  .checklist-section{
-    margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
-  }
-  .checklist-section h2{
-    font-family:'Shippori Mincho',serif; font-size:19px; margin:0 0 6px; font-weight:700;
-  }
-  .checklist-progress{
-    font-size:12.5px; color:var(--washi-dim); margin:0 0 16px;
-  }
-  .checklist-progress-bar{
-    height:5px; background:var(--indigo-900); border-radius:3px; overflow:hidden; margin-top:6px;
-  }
-  .checklist-progress-fill{
-    height:100%; background:var(--moss); border-radius:3px; transition:width .25s;
-  }
-  .checklist-item{
-    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
-    border:1px solid var(--line); border-radius:10px;
-    padding:12px 14px; margin-bottom:8px;
-  }
-  .checklist-item.done{opacity:.55;}
-  .checklist-top{display:flex; align-items:flex-start; gap:10px;}
-  .checklist-status-btn{
-    flex:0 0 auto; width:22px; height:22px; border-radius:6px; margin-top:1px;
-    border:1.5px solid var(--washi-dim); background:transparent; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; padding:0; font-size:13px;
-  }
-  .checklist-status-btn.in-corso{border-color:var(--gold); background:rgba(201,162,75,0.18); color:var(--gold);}
-  .checklist-status-btn.completata{border-color:var(--moss); background:var(--moss); color:var(--indigo-950);}
-  .checklist-body{flex:1; min-width:0;}
-  .checklist-activity{font-weight:700; font-size:14px; color:var(--washi); margin:0 0 4px;}
-  .checklist-item.done .checklist-activity{text-decoration:line-through;}
-  .checklist-meta{font-size:11.5px; color:var(--washi-dim); display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
-  .checklist-priority{
-    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
-    padding:1px 7px; border-radius:10px;
-  }
-  .checklist-priority.alta{background:rgba(193,68,14,0.18); color:var(--vermillion-soft);}
-  .checklist-priority.media{background:rgba(201,162,75,0.18); color:var(--gold);}
-  .checklist-priority.bassa{background:rgba(110,140,106,0.18); color:var(--moss);}
-  .checklist-notes{font-size:12px; color:var(--washi-dim); font-style:italic; margin:6px 0 0;}
-  .checklist-status-label{font-size:11px; color:var(--washi-dim);}
-
   .add-panel{
     margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
   }
@@ -288,9 +253,6 @@
     .countdown-unit{padding:8px 10px; min-width:52px;}
     .countdown-num{font-size:19px;}
     .countdown-label{font-size:9.5px;}
-    .checklist-item{padding:11px 12px;}
-    .checklist-activity{font-size:13.5px;}
-    .checklist-meta{gap:7px;}
     form{flex-direction:column;}
     input[type=text]{width:100%; min-width:0; font-size:16px; padding:13px 14px;}
     select{width:100%; font-size:16px; padding:13px 14px;}
@@ -307,6 +269,10 @@
 <div class="wrap">
 
   <header>
+    <div class="nav-row">
+      <a href="checklist.html" class="nav-link">📋 Checklist</a>
+      <a href="budget.html" class="nav-link">💰 Budget</a>
+    </div>
     <p class="eyebrow">Diario di viaggio</p>
     <h1>Giappone, 10–29 settembre 2026</h1>
     <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto — con mappa di ogni singola giornata.</p>
@@ -326,12 +292,6 @@
 
   <div class="spine" id="spine"></div>
 
-  <div class="checklist-section">
-    <h2>Checklist pre-partenza</h2>
-    <div class="checklist-progress" id="checklistProgress"></div>
-    <div id="checklistList"></div>
-  </div>
-
   <div class="add-panel">
     <h2>Aggiungi una tappa</h2>
     <p>Scrivi il nome del posto: l'app lo cerca da sola e calcola il giorno più vicino. Se preferisci scegliere tu il giorno, selezionalo dal menu. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
@@ -349,42 +309,6 @@
 
 <script>
 // --- Un giorno per blocco, con date, note e punti per la mappa ---
-// --- Checklist pre-partenza ---
-const checklistItems = [
-  {id:"c1", activity:"Verificare validità passaporto Max", responsible:"Max", deadline:"31/05/2026", priority:"alta", status:"in-corso", notes:"Appuntamento il 7 agosto"},
-  {id:"c2", activity:"Verificare validità passaporto Katia", responsible:"Katia", deadline:"31/05/2026", priority:"alta", status:"completata", notes:""},
-  {id:"c3", activity:"Richiedere patente internazionale", responsible:"Max", deadline:"30/06/2026", priority:"alta", status:"in-corso", notes:"Necessaria per guidare in Giappone"},
-  {id:"c4", activity:"Creare copie digitali dei documenti", responsible:"Max", deadline:"15/08/2026", priority:"media", status:"completata", notes:"Salvare su Drive e telefoni"},
-  {id:"c5", activity:"Stampare conferme e numeri di emergenza", responsible:"Max", deadline:"05/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c6", activity:"Confermare voli andata e ritorno", responsible:"Max", deadline:"28/02/2026", priority:"alta", status:"completata", notes:"Partenza 10 settembre; rientro 28/29 settembre"},
-  {id:"c7", activity:"Confermare tutti gli hotel", responsible:"Max", deadline:"30/04/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c8", activity:"Prenotare voli interni", responsible:"Max", deadline:"31/05/2026", priority:"alta", status:"da-fare", notes:"Se previsti nell'itinerario"},
-  {id:"c9", activity:"Prenotare auto a Miyakojima", responsible:"Max", deadline:"30/06/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c10", activity:"Prenotare treni e trasferimenti principali", responsible:"Katia", deadline:"31/07/2026", priority:"media", status:"da-fare", notes:"Valutare pass regionali/JR"},
-  {id:"c11", activity:"Prenotare attrazioni con ingresso limitato", responsible:"Katia", deadline:"31/07/2026", priority:"media", status:"da-fare", notes:"TeamLab, musei, esperienze"},
-  {id:"c12", activity:"Selezionare ristoranti speciali", responsible:"Katia", deadline:"15/08/2026", priority:"bassa", status:"da-fare", notes:""},
-  {id:"c13", activity:"Verificare copertura assicurazione viaggio", responsible:"Entrambi", deadline:"31/03/2026", priority:"alta", status:"da-fare", notes:"Annullamento, bagaglio, assistenza sanitaria"},
-  {id:"c14", activity:"Definire budget complessivo del viaggio", responsible:"Entrambi", deadline:"30/04/2026", priority:"alta", status:"in-corso", notes:""},
-  {id:"c15", activity:"Verificare carte abilitate all'estero", responsible:"Max", deadline:"15/08/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c16", activity:"Controllare limiti carte e plafond", responsible:"Max", deadline:"15/08/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c17", activity:"Decidere contanti in yen da portare", responsible:"Entrambi", deadline:"01/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c18", activity:"Acquistare/attivare eSIM", responsible:"Max", deadline:"05/09/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c19", activity:"Scaricare mappe offline", responsible:"Max", deadline:"05/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c20", activity:"Installare traduttore e lingua offline", responsible:"Entrambi", deadline:"05/09/2026", priority:"media", status:"completata", notes:""},
-  {id:"c21", activity:"Verificare power bank e adattatori", responsible:"Max", deadline:"05/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c22", activity:"Preparare farmaci personali e ricette", responsible:"Katia", deadline:"05/09/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c23", activity:"Preparare kit medico da viaggio", responsible:"Katia", deadline:"05/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c24", activity:"Comunicare assenza a clienti e collaboratori", responsible:"Entrambi", deadline:"31/08/2026", priority:"alta", status:"completata", notes:""},
-  {id:"c25", activity:"Impostare risposta automatica email", responsible:"Max", deadline:"11/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c26", activity:"Organizzare piante, posta e controlli casa", responsible:"Entrambi", deadline:"05/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c27", activity:"Svuotare alimenti deperibili dal frigorifero", responsible:"Katia", deadline:"11/09/2026", priority:"bassa", status:"da-fare", notes:""},
-  {id:"c28", activity:"Controllare acqua, finestre, allarme e utenze", responsible:"Max", deadline:"12/09/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c29", activity:"Completare checklist valigie", responsible:"Entrambi", deadline:"10/09/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c30", activity:"Pesare i bagagli", responsible:"Max", deadline:"11/09/2026", priority:"media", status:"da-fare", notes:""},
-  {id:"c31", activity:"Effettuare check-in online", responsible:"Max", deadline:"11/09/2026", priority:"alta", status:"da-fare", notes:""},
-  {id:"c32", activity:"Controllare orari, terminal e trasferimento aeroporto", responsible:"Entrambi", deadline:"11/09/2026", priority:"alta", status:"da-fare", notes:""},
-];
-
 const itineraryDays = [
   { day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)", desc:"Trasferimento in bus da casa a Milano Malpensa per il volo internazionale verso Tokyo Haneda.", stops:[
     {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"},
@@ -491,65 +415,6 @@ const confirmedStops = [
 ];
 
 const STORAGE_KEY = "pending_stops";
-const CHECKLIST_KEY = "checklist_status_overrides";
-
-const statusCycle = ["da-fare", "in-corso", "completata"];
-const statusLabels = {"da-fare":"Da fare", "in-corso":"In corso", "completata":"Completata"};
-const priorityLabels = {"alta":"Alta", "media":"Media", "bassa":"Bassa"};
-
-function loadChecklistOverrides(){
-  try{ const raw = localStorage.getItem(CHECKLIST_KEY); return raw ? JSON.parse(raw) : {}; }
-  catch(e){ return {}; }
-}
-function saveChecklistOverrides(obj){
-  try{ localStorage.setItem(CHECKLIST_KEY, JSON.stringify(obj)); }
-  catch(e){ console.error("Impossibile salvare:", e); }
-}
-function cycleChecklistStatus(id){
-  const overrides = loadChecklistOverrides();
-  const item = checklistItems.find(i => i.id === id);
-  const current = overrides[id] || item.status;
-  const next = statusCycle[(statusCycle.indexOf(current) + 1) % statusCycle.length];
-  overrides[id] = next;
-  saveChecklistOverrides(overrides);
-  renderChecklist();
-}
-
-function renderChecklist(){
-  const overrides = loadChecklistOverrides();
-  const list = document.getElementById('checklistList');
-  const progressEl = document.getElementById('checklistProgress');
-
-  const withStatus = checklistItems.map(i => ({...i, status: overrides[i.id] || i.status}));
-  const doneCount = withStatus.filter(i => i.status === "completata").length;
-
-  progressEl.innerHTML = `${doneCount} di ${withStatus.length} completate
-    <div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:${(doneCount/withStatus.length*100).toFixed(0)}%"></div></div>`;
-
-  list.innerHTML = withStatus.map(i => `
-    <div class="checklist-item ${i.status === 'completata' ? 'done' : ''}">
-      <div class="checklist-top">
-        <button type="button" class="checklist-status-btn ${i.status}" data-checklist-id="${i.id}" title="Tocca per cambiare stato">
-          ${i.status === 'completata' ? '✓' : ''}
-        </button>
-        <div class="checklist-body">
-          <p class="checklist-activity">${i.activity}</p>
-          <div class="checklist-meta">
-            <span>${i.responsible}</span>
-            <span>📅 ${i.deadline}</span>
-            <span class="checklist-priority ${i.priority}">${priorityLabels[i.priority]}</span>
-            <span class="checklist-status-label">${statusLabels[i.status]}</span>
-          </div>
-          ${i.notes ? `<p class="checklist-notes">${i.notes}</p>` : ""}
-        </div>
-      </div>
-    </div>
-  `).join("");
-
-  list.querySelectorAll('[data-checklist-id]').forEach(btn=>{
-    btn.addEventListener('click', ()=> cycleChecklistStatus(btn.dataset.checklistId));
-  });
-}
 const NOTES_KEY_PREFIX = "day_note_";
 
 function loadDayNote(day){
@@ -994,7 +859,6 @@ function updateCountdown(){
 
 populateDaySelect();
 render();
-renderChecklist();
 renderPending();
 updateCountdown();
 setInterval(updateCountdown, 1000);
