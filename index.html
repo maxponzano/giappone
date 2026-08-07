@@ -375,6 +375,7 @@ function drawDayMap(container, day){
     L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(layer);
   }
 
+  let startMarker = null;
   allStops.forEach((s, idx)=>{
     let marker;
     const isStart = idx === 0;
@@ -392,7 +393,9 @@ function drawDayMap(container, day){
     const label = isStart ? `${s.name} · partenza` : s.name;
     marker.bindPopup(`<strong>${label}</strong>`);
     marker.bindTooltip(label, { permanent:true, direction:"top", offset:[0,-7], className:"map-label" });
+    if(isStart) startMarker = marker;
   });
+  if(startMarker && startMarker.bringToFront) startMarker.bringToFront();
 
   const boundsPoints = allStops.map(s=>[s.lat, s.lng]);
   if(boundsPoints.length === 1){
