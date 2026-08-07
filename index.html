@@ -217,6 +217,7 @@
   </div>
 
   <div class="map-legend">
+    <span><span class="legend-dot" style="background:#4CAF6B"></span>Partenza della giornata</span>
     <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
     <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
     <span>✈️ Volo</span>
@@ -251,6 +252,7 @@ const itineraryDays = [
     {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"}
   ]},
   { day:"2", date:"12 set", city:"Tokyo", note:"Asakusa con guida, poi Harajuku e Shibuya in autonomia", stops:[
+    {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"},
     {name:"Asakusa", lat:35.7148, lng:139.7967, type:"day"},
     {name:"Shinjuku Gyoen", lat:35.6852, lng:139.7101, type:"extra"},
     {name:"Harajuku", lat:35.6702, lng:139.7026, type:"day"},
@@ -277,6 +279,7 @@ const itineraryDays = [
     {name:"Yakiniku no GANSAN", lat:35.0074, lng:135.7712, type:"extra"}
   ]},
   { day:"7", date:"17 set", city:"Nara", note:"Fushimi Inari Taisha al mattino, poi i cervi di Nara", stops:[
+    {name:"Kyoto (hotel)", lat:35.0116, lng:135.7681, type:"stay"},
     {name:"Fushimi Inari Taisha", lat:34.9671, lng:135.7727, type:"day"},
     {name:"Nara", lat:34.6851, lng:135.8048, type:"day"}
   ]},
@@ -372,19 +375,23 @@ function drawDayMap(container, day){
     L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(layer);
   }
 
-  allStops.forEach(s=>{
+  allStops.forEach((s, idx)=>{
     let marker;
+    const isStart = idx === 0;
     if(s.type === "flight"){
       marker = L.marker([s.lat, s.lng], {
         icon: L.divIcon({ className:"plane-icon", html:"✈️", iconSize:[24,24], iconAnchor:[12,12] })
       }).addTo(layer);
     } else {
       marker = L.circleMarker([s.lat, s.lng], {
-        radius: 7, fillColor: colorFor(s.type), color:"#0E1728", weight:2, fillOpacity:1
+        radius: isStart ? 8 : 7,
+        fillColor: isStart ? "#4CAF6B" : colorFor(s.type),
+        color:"#0E1728", weight:2, fillOpacity:1
       }).addTo(layer);
     }
-    marker.bindPopup(`<strong>${s.name}</strong>`);
-    marker.bindTooltip(s.name, { permanent:true, direction:"top", offset:[0,-7], className:"map-label" });
+    const label = isStart ? `${s.name} · partenza` : s.name;
+    marker.bindPopup(`<strong>${label}</strong>`);
+    marker.bindTooltip(label, { permanent:true, direction:"top", offset:[0,-7], className:"map-label" });
   });
 
   const boundsPoints = allStops.map(s=>[s.lat, s.lng]);
