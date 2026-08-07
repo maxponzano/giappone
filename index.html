@@ -85,6 +85,14 @@
     padding:12px 14px; margin:8px 0 4px; position:relative;
     display:flex; gap:12px; align-items:flex-start;
   }
+  .stop-remove{
+    flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+    background:transparent; border:1px solid var(--line); color:var(--washi-dim);
+    font-size:13px; line-height:1; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; padding:0;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .stop-remove:hover{border-color:var(--vermillion); color:var(--vermillion-soft);}
   .stamp{
     flex:0 0 auto; width:34px; height:34px; border-radius:50%;
     border:1.5px solid var(--vermillion); color:var(--vermillion-soft);
@@ -93,6 +101,7 @@
     transform:rotate(-8deg);
   }
   .stop-body{flex:1; min-width:0;}
+  .stop-card > .stop-remove{margin-left:auto;}
   .stop-name{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 3px;}
   .stop-meta{font-size:12.5px; color:var(--washi-dim); display:flex; gap:14px; flex-wrap:wrap;}
   .stop-meta span{display:flex; align-items:center; gap:5px;}
@@ -250,6 +259,7 @@ const confirmedStops = [
 ];
 
 const STORAGE_KEY = "pending_stops";
+const HIDDEN_KEY = "hidden_confirmed_stops";
 
 // --- Percorsi giorno per giorno per la mappa ---
 // Ogni giorno: lista di tappe nell'ordine dello spostamento + eventuali tappe extra confermate
@@ -362,13 +372,38 @@ function renderDaySelector(){
   });
 }
 
+function loadHiddenConfirmed(){
+  try{
+    const raw = localStorage.getItem(HIDDEN_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function saveHiddenConfirmed(list){
+  try{
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify(list));
+  }catch(e){
+    console.error("Impossibile salvare:", e);
+  }
+}
+
+function removeConfirmedStop(name){
+  const hidden = loadHiddenConfirmed();
+  if(!hidden.includes(name)) hidden.push(name);
+  saveHiddenConfirmed(hidden);
+  render();
+}
+
 function render(){
   const spine = document.getElementById('spine');
+  const hidden = loadHiddenConfirmed();
   spine.innerHTML = "";
   itinerary.forEach(block=>{
     const div = document.createElement('div');
     div.className = "day-block";
-    const stops = confirmedStops.filter(s=>s.attachTo === block.day);
+    const stops = confirmedStops.filter(s=>s.attachTo === block.day && !hidden.includes(s.name));
     div.innerHTML = `
       <div class="node"></div>
       <div class="day-head">
@@ -388,10 +423,14 @@ function render(){
               <span>🚶 ${s.transport}</span>
             </div>
           </div>
+          <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
     `;
     spine.appendChild(div);
+  });
+  spine.querySelectorAll('[data-remove-confirmed]').forEach(btn=>{
+    btn.addEventListener('click', ()=> removeConfirmedStop(btn.dataset.removeConfirmed));
   });
 }
 
@@ -426,8 +465,18 @@ async function renderPending(){
         <p class="stop-name">${name}</p>
         <div class="stop-meta"><span>In attesa di posizionamento — chiedi a Claude in chat</span></div>
       </div>
+      <button type="button" class="stop-remove" data-remove-pending="${i}" title="Rimuovi tappa">✕</button>
     </div>
   `).join("");
+  el.querySelectorAll('[data-remove-pending]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const idx = parseInt(btn.dataset.removePending, 10);
+      const current = await loadPending();
+      current.splice(idx, 1);
+      await savePending(current);
+      renderPending();
+    });
+  });
 }
 
 document.getElementById('addForm').addEventListener('submit', async (e)=>{
