@@ -63,6 +63,14 @@
   .summary-total{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
   .summary-total-label{font-size:12.5px; color:var(--washi-dim);}
   .summary-total-value{font-family:'Shippori Mincho',serif; font-size:24px; font-weight:700; color:var(--gold);}
+  .summary-row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; font-size:13px;}
+  .summary-row-label{color:var(--washi-dim);}
+  .summary-row-value{color:var(--washi); font-weight:700;}
+  .summary-row-grand{
+    padding-top:8px; margin-top:2px; margin-bottom:12px; border-top:1px solid var(--line);
+  }
+  .summary-row-grand .summary-row-label{color:var(--washi); font-weight:700;}
+  .summary-row-grand .summary-row-value{color:var(--vermillion-soft); font-family:'Shippori Mincho',serif; font-size:16px;}
   .summary-settlement{
     font-size:14px; padding-top:10px; border-top:1px solid var(--line);
     color:var(--washi); font-weight:700;
@@ -138,8 +146,16 @@
 
   <div class="summary">
     <div class="summary-total">
-      <span class="summary-total-label">Spesa totale</span>
-      <span class="summary-total-value" id="totalValue">€ 0,00</span>
+      <span class="summary-total-label">Speso finora</span>
+      <span class="summary-total-value" id="spentValue">€ 0,00</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-row-label">Preventivato (non ancora pagato)</span>
+      <span class="summary-row-value" id="plannedValue">€ 0,00</span>
+    </div>
+    <div class="summary-row summary-row-grand">
+      <span class="summary-row-label">Totale previsto del viaggio</span>
+      <span class="summary-row-value" id="grandTotalValue">€ 0,00</span>
     </div>
     <div class="summary-settlement" id="settlement"></div>
   </div>
@@ -349,8 +365,12 @@ function render(){
   });
 
   // Totale e saldo
-  const total = items.reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
-  document.getElementById('totalValue').textContent = fmtEuro(total);
+  const spentTotal = items.filter(i => i.paidBy !== "").reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
+  const plannedTotal = items.filter(i => i.paidBy === "").reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
+  const grandTotal = spentTotal + plannedTotal;
+  document.getElementById('spentValue').textContent = fmtEuro(spentTotal);
+  document.getElementById('plannedValue').textContent = fmtEuro(plannedTotal);
+  document.getElementById('grandTotalValue').textContent = fmtEuro(grandTotal);
 
   let maxPaidShared = 0, katiaPaidShared = 0;
   items.filter(i => i.split).forEach(i=>{
