@@ -65,18 +65,23 @@
     width:100%; height:auto; display:block;
   }
 
-  .spine{position:relative; margin-top:38px; padding-left:26px;}
+  .map-legend{
+    display:flex; gap:16px; flex-wrap:wrap; margin-top:20px; font-size:12px; color:var(--washi-dim);
+  }
+  .map-legend span{display:flex; align-items:center; gap:6px;}
+  .legend-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  .spine{position:relative; margin-top:24px; padding-left:26px;}
   .spine::before{
     content:""; position:absolute; left:5px; top:6px; bottom:6px; width:1px;
     background:linear-gradient(var(--line), var(--line) 90%, transparent);
   }
 
-  .day-block{position:relative; margin-bottom:26px;}
+  .day-block{position:relative; margin-bottom:30px;}
   .node{
     position:absolute; left:-26px; top:4px; width:11px; height:11px; border-radius:50%;
     background:var(--indigo-950); border:1.5px solid var(--gold);
   }
-  .day-block.transit .node{border-color:var(--washi-dim);}
 
   .day-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;}
   .day-label{font-family:'Shippori Mincho',serif; font-weight:700; font-size:17px; color:var(--washi);}
@@ -119,34 +124,15 @@
   .pending{border-style:dashed; opacity:.85;}
   .pending .stop-meta{font-style:italic;}
 
-  .map-panel{
-    margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
+  .day-map{
+    width:100%; height:190px; border-radius:10px; overflow:hidden;
+    border:1px solid var(--line); margin-top:12px;
+    background:var(--indigo-900);
+    display:flex; align-items:center; justify-content:center;
   }
-  .map-panel h2{
-    font-family:'Shippori Mincho',serif; font-size:19px; margin:0 0 6px; font-weight:700;
+  .day-map .map-placeholder{
+    font-size:11.5px; color:var(--washi-dim); font-style:italic;
   }
-  .map-panel p.map-sub{font-size:13px; color:var(--washi-dim); margin:0 0 16px; max-width:58ch; line-height:1.5;}
-  .day-selector{
-    display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;
-  }
-  .day-pill{
-    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi-dim);
-    padding:7px 13px; border-radius:20px; font-size:12.5px; cursor:pointer;
-    font-family:'Zen Kaku Gothic New',sans-serif; transition:background .15s, color .15s, border-color .15s;
-  }
-  .day-pill:hover{border-color:var(--gold);}
-  .day-pill.active{
-    background:var(--vermillion); color:var(--washi); border-color:var(--vermillion); font-weight:700;
-  }
-  #mapContainer{
-    width:100%; height:340px; border-radius:10px; overflow:hidden;
-    border:1px solid var(--line);
-  }
-  .map-legend{
-    display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--washi-dim);
-  }
-  .map-legend span{display:flex; align-items:center; gap:6px;}
-  .legend-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
   .leaflet-popup-content-wrapper{
     background:var(--indigo-800); color:var(--washi); border-radius:8px;
     font-family:'Zen Kaku Gothic New',sans-serif;
@@ -155,12 +141,12 @@
   .leaflet-popup-content{font-size:13px; margin:10px 12px;}
   .map-label{
     background:rgba(14,23,40,0.88); border:1px solid var(--line); color:var(--washi);
-    font-family:'Zen Kaku Gothic New',sans-serif; font-size:11.5px; font-weight:500;
-    padding:2px 7px; border-radius:5px; box-shadow:none; white-space:nowrap;
+    font-family:'Zen Kaku Gothic New',sans-serif; font-size:11px; font-weight:500;
+    padding:2px 6px; border-radius:5px; box-shadow:none; white-space:nowrap;
   }
   .map-label::before{border-top-color:rgba(14,23,40,0.88) !important;}
   .plane-icon{
-    font-size:20px; display:flex; align-items:center; justify-content:center;
+    font-size:18px; display:flex; align-items:center; justify-content:center;
     filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));
   }
 
@@ -184,12 +170,12 @@
     font-family:'Zen Kaku Gothic New',sans-serif;
   }
   button:hover{background:var(--vermillion-soft);}
+  button:disabled{opacity:.6; cursor:default;}
   .empty{font-size:12.5px; color:var(--washi-dim); font-style:italic; margin-top:14px;}
   .foot-note{font-size:12px; color:var(--washi-dim); margin-top:10px; line-height:1.6;}
   .status-msg{font-size:12.5px; margin-top:10px; min-height:16px;}
   .status-msg.ok{color:var(--moss);}
   .status-msg.err{color:var(--vermillion-soft);}
-  button:disabled{opacity:.6; cursor:default;}
 
   /* --- Ottimizzazione smartphone --- */
   @media (max-width: 640px){
@@ -205,16 +191,13 @@
     .stop-card{padding:11px 12px; gap:10px;}
     .stamp{width:30px; height:30px; font-size:12.5px;}
     .stop-meta{flex-direction:column; gap:5px;}
+    .day-map{height:160px;}
     form{flex-direction:column;}
     input[type=text]{width:100%; min-width:0; font-size:16px; padding:13px 14px;}
     button{width:100%; padding:14px 18px; font-size:15px;}
     .add-panel{margin-top:34px; padding-top:22px;}
-    .map-panel{margin-top:34px; padding-top:22px;}
-    #mapContainer{height:280px;}
-    .day-pill{padding:8px 12px; font-size:12px;}
   }
 
-  /* Tocco più comodo su touch: aree cliccabili più grandi, niente hover "appiccicoso" */
   @media (hover: none){
     button:active{background:var(--vermillion-soft);}
   }
@@ -226,68 +209,134 @@
   <header>
     <p class="eyebrow">Diario di viaggio</p>
     <h1>Giappone, 10–29 settembre 2026</h1>
-    <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto.</p>
+    <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto — con mappa di ogni singola giornata.</p>
   </header>
 
   <div class="cover-photo">
     <img src="cover.jpg" alt="Max e Katia in Giappone" />
   </div>
 
-  <div class="spine" id="spine"></div>
-
-  <div class="map-panel">
-    <h2>Mappa degli spostamenti</h2>
-    <p class="map-sub">Seleziona un giorno per vedere dove dormite e come vi muovete.</p>
-    <div class="day-selector" id="daySelector"></div>
-    <div id="mapContainer"></div>
-    <div class="map-legend">
-      <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
-      <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
-      <span><span class="legend-dot" style="background:#6E8C6A"></span>Percorso</span>
-    </div>
+  <div class="map-legend">
+    <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
+    <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
+    <span>✈️ Volo</span>
   </div>
+
+  <div class="spine" id="spine"></div>
 
   <div class="add-panel">
     <h2>Aggiungi una tappa</h2>
-    <p>Scrivi il nome del posto: l'app lo cerca da sola, calcola il giorno più vicino in base alla vostra tappa di quel giorno e suggerisce il mezzo di trasporto. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
+    <p>Scrivi il nome del posto: l'app lo cerca da sola, calcola il giorno più vicino e suggerisce il mezzo di trasporto. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
     <form id="addForm">
       <input type="text" id="stopInput" placeholder="Es. Nishiki Market" />
       <button type="submit" id="addBtn">Aggiungi</button>
     </form>
-    <div id="statusMsg"></div>
+    <div id="statusMsg" class="status-msg"></div>
     <div id="pendingList"></div>
-    <p class="foot-note">Le tappe con timbro rosso sono già posizionate automaticamente. Se la ricerca non trova il posto (nome poco chiaro o rete assente), resta in attesa con timbro grigio — puoi correggerne il nome e riprovare, oppure eliminarla.</p>
+    <p class="foot-note">Le tappe con timbro rosso sono già posizionate automaticamente. Se la ricerca non trova il posto, resta in attesa con timbro grigio — puoi correggerne il nome e riprovare (↻), oppure eliminarla (✕).</p>
   </div>
 
 </div>
 
 <script>
-// --- Itinerario fisso (da preventivo Evaneos) ---
-const itinerary = [
-  {day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)"},
-  {day:"1–2", date:"11–12 set", city:"Tokyo", note:"Arrivo, Ginza, Asakusa, Harajuku, Shibuya"},
-  {day:"3", date:"13 set", city:"Kamakura", note:"Gita in giornata (pernotto Tokyo) — Grande Buddha, Odaiba"},
-  {day:"4", date:"14 set", city:"Hakone", note:"Onsen, ryokan Yama No Chaya"},
-  {day:"5–6", date:"15–16 set", city:"Kyoto", note:"Gion, cerimonia del tè, Padiglione d'Oro, Arashiyama"},
-  {day:"7", date:"17 set", city:"Nara", note:"Gita in giornata — Fushimi Inari, cervi di Nara"},
-  {day:"8–9", date:"18–19 set", city:"Osaka", note:"Castello, Dotonbori, eventuale Kobe/Himeji"},
-  {day:"10–17", date:"20–27 set", city:"Okinawa · Miyakojima", note:"Mare, spiagge, giornate libere"},
-  {day:"18", date:"28 set", city:"Tokyo", note:"Rientro in Italia"},
-  {day:"19", date:"29 set", city:"Milano Malpensa", note:"Malpensa → Casa in FlixBus (bus da prenotare)"},
+// --- Un giorno per blocco, con date, note e punti per la mappa ---
+const itineraryDays = [
+  { day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)", stops:[
+    {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"},
+    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
+    {name:"Volo per Tokyo Haneda", lat:35.5494, lng:139.7798, type:"flight"}
+  ]},
+  { day:"1", date:"11 set", city:"Tokyo", note:"Arrivo, trasferimento privato in hotel a Ginza", stops:[
+    {name:"Aeroporto di Tokyo", lat:35.5494, lng:139.7798, type:"stay"},
+    {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"}
+  ]},
+  { day:"2", date:"12 set", city:"Tokyo", note:"Asakusa con guida, poi Harajuku e Shibuya in autonomia", stops:[
+    {name:"Asakusa", lat:35.7148, lng:139.7967, type:"day"},
+    {name:"Shinjuku Gyoen", lat:35.6852, lng:139.7101, type:"extra"},
+    {name:"Harajuku", lat:35.6702, lng:139.7026, type:"day"},
+    {name:"Shibuya", lat:35.6595, lng:139.7005, type:"day"}
+  ]},
+  { day:"3", date:"13 set", city:"Kamakura", note:"Gita in giornata (pernotto Tokyo) — Grande Buddha, poi Odaiba", stops:[
+    {name:"Tokyo", lat:35.6717, lng:139.7650, type:"stay"},
+    {name:"Kamakura", lat:35.3193, lng:139.5466, type:"day"},
+    {name:"Odaiba", lat:35.6267, lng:139.7752, type:"day"},
+    {name:"Tokyo (rientro)", lat:35.6717, lng:139.7650, type:"stay"}
+  ]},
+  { day:"4", date:"14 set", city:"Hakone", note:"Onsen e vedute sul Fuji, notte al ryokan Yama No Chaya", stops:[
+    {name:"Tokyo (Shinjuku)", lat:35.6896, lng:139.7006, type:"stay"},
+    {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"}
+  ]},
+  { day:"5", date:"15 set", city:"Kyoto", note:"Da Hakone a Kyoto — quartiere di Gion, cerimonia del tè in kimono", stops:[
+    {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"},
+    {name:"Kyoto (Gion)", lat:35.0037, lng:135.7752, type:"stay"}
+  ]},
+  { day:"6", date:"16 set", city:"Kyoto", note:"Padiglione d'Oro e Ryoan-ji con guida, poi foresta di bambù ad Arashiyama", stops:[
+    {name:"Kyoto", lat:35.0116, lng:135.7681, type:"stay"},
+    {name:"Padiglione d'Oro", lat:35.0394, lng:135.7292, type:"day"},
+    {name:"Arashiyama", lat:35.0094, lng:135.6683, type:"day"},
+    {name:"Yakiniku no GANSAN", lat:35.0074, lng:135.7712, type:"extra"}
+  ]},
+  { day:"7", date:"17 set", city:"Nara", note:"Fushimi Inari Taisha al mattino, poi i cervi di Nara", stops:[
+    {name:"Fushimi Inari Taisha", lat:34.9671, lng:135.7727, type:"day"},
+    {name:"Nara", lat:34.6851, lng:135.8048, type:"day"}
+  ]},
+  { day:"8", date:"18 set", city:"Osaka", note:"Da Kyoto a Osaka — Castello di Osaka, Santuario di Sumiyoshi", stops:[
+    {name:"Kyoto", lat:35.0116, lng:135.7681, type:"stay"},
+    {name:"Osaka (Umeda)", lat:34.7025, lng:135.4959, type:"stay"},
+    {name:"Castello di Osaka", lat:34.6873, lng:135.5262, type:"day"}
+  ]},
+  { day:"9", date:"19 set", city:"Osaka", note:"Dotonbori e street food, eventuale gita a Kobe o Himeji", stops:[
+    {name:"Osaka", lat:34.7025, lng:135.4959, type:"stay"},
+    {name:"Dotonbori", lat:34.6687, lng:135.5013, type:"day"}
+  ]},
+  { day:"10", date:"20 set", city:"Okinawa · Miyakojima", note:"Volo interno da Osaka a Miyakojima", stops:[
+    {name:"Osaka (Itami)", lat:34.7855, lng:135.4382, type:"stay"},
+    {name:"Miyakojima, Okinawa", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"11", date:"21 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"12", date:"22 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"13", date:"23 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"14", date:"24 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"15", date:"25 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"16", date:"26 set", city:"Okinawa · Miyakojima", note:"Giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"17", date:"27 set", city:"Okinawa · Miyakojima", note:"Ultima giornata libera — mare e spiagge", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { day:"18", date:"28 set", city:"Tokyo", note:"Rientro da Miyakojima verso l'Italia", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"},
+    {name:"Tokyo (Haneda)", lat:35.5494, lng:139.7798, type:"stay"},
+    {name:"Volo per Milano Malpensa", lat:45.6306, lng:8.7231, type:"flight"}
+  ]},
+  { day:"19", date:"29 set", city:"Milano Malpensa", note:"Malpensa → Casa in FlixBus (bus da prenotare)", stops:[
+    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
+    {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"}
+  ]},
 ];
 
-// --- Tappe extra: quelle già geolocalizzate e posizionate da Claude ---
+// --- Tappe extra: quelle già confermate e posizionate ---
 const confirmedStops = [
   {
     name:"Yakiniku no GANSAN",
-    attachTo:"5–6", // day key
+    attachTo:"6",
     area:"Kyoto, Nakagyo — 10-15 min a piedi dall'hotel",
     when:"Cena, giorno 6",
     transport:"A piedi dall'hotel"
   },
   {
     name:"Shinjuku Gyoen National Garden",
-    attachTo:"1–2",
+    attachTo:"2",
     area:"Tokyo, Shinjuku — a metà tra Harajuku e Shibuya",
     when:"Mattina, giorno 2 (chiuso il lunedì)",
     transport:"Metro fino a Shinjuku-Gyoenmae"
@@ -298,193 +347,114 @@ const STORAGE_KEY = "pending_stops";
 const HIDDEN_KEY = "hidden_confirmed_stops";
 const AUTO_KEY = "auto_stops";
 
-// Collega ogni giorno della mappa al blocco corrispondente nella timeline
-const dayKeyToItineraryKey = {
-  "0":"0", "1":"1–2", "2":"1–2", "3":"3", "4":"4",
-  "5–6":"5–6", "7":"7", "8–9":"8–9", "10–17":"10–17", "18":"18", "19":"19"
-};
-
-// --- Percorsi giorno per giorno per la mappa ---
-// Ogni giorno: lista di tappe nell'ordine dello spostamento + eventuali tappe extra confermate
-const mapDays = [
-  { key:"0", label:"Giorno 0", stops:[
-    {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"},
-    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
-    {name:"Volo per Tokyo Haneda", lat:35.5494, lng:139.7798, type:"flight"}
-  ]},
-  { key:"1", label:"Giorno 1", stops:[
-    {name:"Aeroporto di Tokyo", lat:35.5494, lng:139.7798, type:"stay"},
-    {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"}
-  ]},
-  { key:"2", label:"Giorno 2", stops:[
-    {name:"Asakusa", lat:35.7148, lng:139.7967, type:"day"},
-    {name:"Shinjuku Gyoen", lat:35.6852, lng:139.7101, type:"extra"},
-    {name:"Harajuku", lat:35.6702, lng:139.7026, type:"day"},
-    {name:"Shibuya", lat:35.6595, lng:139.7005, type:"day"}
-  ]},
-  { key:"3", label:"Giorno 3", stops:[
-    {name:"Tokyo", lat:35.6717, lng:139.7650, type:"stay"},
-    {name:"Kamakura", lat:35.3193, lng:139.5466, type:"day"},
-    {name:"Odaiba", lat:35.6267, lng:139.7752, type:"day"},
-    {name:"Tokyo (rientro)", lat:35.6717, lng:139.7650, type:"stay"}
-  ]},
-  { key:"4", label:"Giorno 4", stops:[
-    {name:"Tokyo (Shinjuku)", lat:35.6896, lng:139.7006, type:"stay"},
-    {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"}
-  ]},
-  { key:"5–6", label:"Giorno 5-6", stops:[
-    {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"},
-    {name:"Kyoto (Gion)", lat:35.0037, lng:135.7752, type:"stay"},
-    {name:"Padiglione d'Oro", lat:35.0394, lng:135.7292, type:"day"},
-    {name:"Arashiyama", lat:35.0094, lng:135.6683, type:"day"},
-    {name:"Yakiniku no GANSAN", lat:35.0074, lng:135.7712, type:"extra"}
-  ]},
-  { key:"7", label:"Giorno 7", stops:[
-    {name:"Fushimi Inari Taisha", lat:34.9671, lng:135.7727, type:"day"},
-    {name:"Nara", lat:34.6851, lng:135.8048, type:"day"}
-  ]},
-  { key:"8–9", label:"Giorno 8-9", stops:[
-    {name:"Kyoto", lat:35.0116, lng:135.7681, type:"stay"},
-    {name:"Osaka (Umeda)", lat:34.7025, lng:135.4959, type:"stay"},
-    {name:"Castello di Osaka", lat:34.6873, lng:135.5262, type:"day"},
-    {name:"Dotonbori", lat:34.6687, lng:135.5013, type:"day"}
-  ]},
-  { key:"10–17", label:"Giorno 10-17", stops:[
-    {name:"Osaka (Itami)", lat:34.7855, lng:135.4382, type:"stay"},
-    {name:"Miyakojima, Okinawa", lat:24.7828, lng:125.2814, type:"stay"}
-  ]},
-  { key:"18", label:"Giorno 18", stops:[
-    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"},
-    {name:"Tokyo (Haneda)", lat:35.5494, lng:139.7798, type:"stay"},
-    {name:"Volo per Milano Malpensa", lat:45.6306, lng:8.7231, type:"flight"}
-  ]},
-  { key:"19", label:"Giorno 19", stops:[
-    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
-    {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"}
-  ]},
-];
-
-let leafletMap, mapLayer;
-
-function initMap(){
-  leafletMap = L.map('mapContainer', { scrollWheelZoom:false });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    maxZoom: 18
-  }).addTo(leafletMap);
-  mapLayer = L.layerGroup().addTo(leafletMap);
-}
+let dayMaps = {}; // day -> leaflet map instance (inizializzata pigramente)
 
 function colorFor(type){
-  if(type === "extra") return "#C1440E";
-  if(type === "day") return "#C1440E";
+  if(type === "extra" || type === "day") return "#C1440E";
   return "#C9A24B";
 }
 
-function renderMapDay(dayKey){
-  mapLayer.clearLayers();
-  const day = mapDays.find(d => d.key === dayKey);
-  if(!day) return;
-
-  const autoStops = loadAutoStops().filter(s => s.mapDayKey === dayKey);
+function drawDayMap(container, day){
+  const autoStops = loadAutoStops().filter(s => s.itineraryKey === day.day);
   const allStops = [...day.stops, ...autoStops.map(s=>({name:s.name, lat:s.lat, lng:s.lng, type:"extra"}))];
-  const latlngs = day.stops.map(s => [s.lat, s.lng]);
+  if(allStops.length === 0) return;
 
-  L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(mapLayer);
+  const map = L.map(container, { scrollWheelZoom:false, zoomControl:true, dragging:true });
+  dayMaps[day.day] = map;
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    maxZoom: 18
+  }).addTo(map);
+  const layer = L.layerGroup().addTo(map);
+
+  if(allStops.length > 1){
+    const latlngs = day.stops.map(s => [s.lat, s.lng]);
+    L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(layer);
+  }
 
   allStops.forEach(s=>{
     let marker;
     if(s.type === "flight"){
       marker = L.marker([s.lat, s.lng], {
-        icon: L.divIcon({
-          className: "plane-icon",
-          html: "✈️",
-          iconSize: [26, 26],
-          iconAnchor: [13, 13]
-        })
-      }).addTo(mapLayer);
+        icon: L.divIcon({ className:"plane-icon", html:"✈️", iconSize:[24,24], iconAnchor:[12,12] })
+      }).addTo(layer);
     } else {
       marker = L.circleMarker([s.lat, s.lng], {
-        radius: 8,
-        fillColor: colorFor(s.type),
-        color: "#0E1728",
-        weight: 2,
-        fillOpacity: 1
-      }).addTo(mapLayer);
+        radius: 7, fillColor: colorFor(s.type), color:"#0E1728", weight:2, fillOpacity:1
+      }).addTo(layer);
     }
     marker.bindPopup(`<strong>${s.name}</strong>`);
-    marker.bindTooltip(s.name, {
-      permanent: true,
-      direction: "top",
-      offset: [0, -8],
-      className: "map-label"
-    });
+    marker.bindTooltip(s.name, { permanent:true, direction:"top", offset:[0,-7], className:"map-label" });
   });
 
   const boundsPoints = allStops.map(s=>[s.lat, s.lng]);
-  leafletMap.fitBounds(boundsPoints, { padding:[30,30], maxZoom:12 });
+  if(boundsPoints.length === 1){
+    map.setView(boundsPoints[0], 12);
+  } else {
+    map.fitBounds(boundsPoints, { padding:[24,24], maxZoom:12 });
+  }
 }
 
-function renderDaySelector(){
-  const el = document.getElementById('daySelector');
-  el.innerHTML = mapDays.map((d,i)=>`
-    <button type="button" class="day-pill${i===0?' active':''}" data-key="${d.key}">${d.label}</button>
-  `).join("");
-  el.querySelectorAll('.day-pill').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      el.querySelectorAll('.day-pill').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      renderMapDay(btn.dataset.key);
+function initLazyMaps(){
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const container = entry.target;
+        const dayKey = container.dataset.day;
+        const day = itineraryDays.find(d => d.day === dayKey);
+        if(day && !dayMaps[dayKey]){
+          container.innerHTML = "";
+          drawDayMap(container, day);
+        }
+        observer.unobserve(container);
+      }
     });
-  });
+  }, { rootMargin: "200px 0px" });
+
+  document.querySelectorAll('.day-map').forEach(el => observer.observe(el));
+}
+
+function refreshDayMap(dayKey){
+  const container = document.querySelector(`.day-map[data-day="${dayKey}"]`);
+  if(!container) return;
+  if(dayMaps[dayKey]){
+    dayMaps[dayKey].remove();
+    delete dayMaps[dayKey];
+  }
+  container.innerHTML = "";
+  const day = itineraryDays.find(d => d.day === dayKey);
+  if(day) drawDayMap(container, day);
 }
 
 function loadHiddenConfirmed(){
-  try{
-    const raw = localStorage.getItem(HIDDEN_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){
-    return [];
-  }
+  try{ const raw = localStorage.getItem(HIDDEN_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
 }
-
 function saveHiddenConfirmed(list){
-  try{
-    localStorage.setItem(HIDDEN_KEY, JSON.stringify(list));
-  }catch(e){
-    console.error("Impossibile salvare:", e);
-  }
+  try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(list)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
 }
-
-function removeConfirmedStop(name){
+function removeConfirmedStop(name, day){
   const hidden = loadHiddenConfirmed();
   if(!hidden.includes(name)) hidden.push(name);
   saveHiddenConfirmed(hidden);
   render();
+  refreshDayMap(day);
 }
 
 function loadAutoStops(){
-  try{
-    const raw = localStorage.getItem(AUTO_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){
-    return [];
-  }
+  try{ const raw = localStorage.getItem(AUTO_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
 }
-
 function saveAutoStops(list){
-  try{
-    localStorage.setItem(AUTO_KEY, JSON.stringify(list));
-  }catch(e){
-    console.error("Impossibile salvare:", e);
-  }
+  try{ localStorage.setItem(AUTO_KEY, JSON.stringify(list)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
 }
-
-function removeAutoStop(id){
+function removeAutoStop(id, day){
   const list = loadAutoStops().filter(s => s.id !== id);
   saveAutoStops(list);
   render();
-  renderMapDay(document.querySelector('.day-pill.active')?.dataset.key || mapDays[0].key);
+  refreshDayMap(day);
 }
 
 function render(){
@@ -492,7 +462,8 @@ function render(){
   const hidden = loadHiddenConfirmed();
   const autoStops = loadAutoStops();
   spine.innerHTML = "";
-  itinerary.forEach(block=>{
+
+  itineraryDays.forEach(block=>{
     const div = document.createElement('div');
     div.className = "day-block";
     const fixedStops = confirmedStops.filter(s=>s.attachTo === block.day && !hidden.includes(s.name));
@@ -516,7 +487,7 @@ function render(){
               <span>🚶 ${s.transport}</span>
             </div>
           </div>
-          <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" title="Rimuovi tappa">✕</button>
+          <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
       ${myStops.map(s=>`
@@ -529,44 +500,89 @@ function render(){
               <span>🚶 ${s.transport}</span>
             </div>
           </div>
-          <button type="button" class="stop-remove" data-remove-auto="${s.id}" title="Rimuovi tappa">✕</button>
+          <button type="button" class="stop-remove" data-remove-auto="${s.id}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
+      <div class="day-map" data-day="${block.day}"><span class="map-placeholder">Caricamento mappa…</span></div>
     `;
     spine.appendChild(div);
   });
+
   spine.querySelectorAll('[data-remove-confirmed]').forEach(btn=>{
-    btn.addEventListener('click', ()=> removeConfirmedStop(btn.dataset.removeConfirmed));
+    btn.addEventListener('click', ()=> removeConfirmedStop(btn.dataset.removeConfirmed, btn.dataset.day));
   });
   spine.querySelectorAll('[data-remove-auto]').forEach(btn=>{
-    btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto));
+    btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto, btn.dataset.day));
   });
+
+  initLazyMaps();
+}
+
+// --- Motore di posizionamento automatico ---
+
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function findNearestDay(lat, lng){
+  let best = null;
+  itineraryDays.forEach(day=>{
+    day.stops.forEach(s=>{
+      const d = haversineKm(lat, lng, s.lat, s.lng);
+      if(!best || d < best.dist){
+        best = { dist: d, day: day.day, nearName: s.name };
+      }
+    });
+  });
+  return best;
+}
+
+function transportHint(distKm){
+  if(distKm < 1.2) return "A piedi (10-15 min)";
+  if(distKm < 8) return "Metro o treno locale";
+  if(distKm < 40) return "Treno regionale o bus";
+  if(distKm < 150) return "Treno con cambio (verificare tratta)";
+  return "Fuori zona — verificare collegamento aereo/Shinkansen";
+}
+
+async function geocodePlace(name){
+  const query = /giappone|japan/i.test(name) ? name : `${name}, Japan`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { "Accept-Language": "it" } });
+  if(!res.ok) throw new Error("Ricerca non riuscita");
+  const data = await res.json();
+  if(!data || !data.length) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+function setStatus(msg, kind){
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = "status-msg" + (kind ? " " + kind : "");
+  if(kind === "ok"){
+    setTimeout(()=>{ if(el.textContent === msg){ el.textContent = ""; el.className = "status-msg"; } }, 4000);
+  }
 }
 
 async function loadPending(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){
-    return [];
-  }
+  try{ const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
 }
-
 async function savePending(list){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  }catch(e){
-    console.error("Impossibile salvare:", e);
-  }
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
 }
 
 async function renderPending(){
   const list = await loadPending();
   const el = document.getElementById('pendingList');
-  if(list.length === 0){
-    el.innerHTML = "";
-    return;
-  }
+  if(list.length === 0){ el.innerHTML = ""; return; }
   el.innerHTML = list.map((name, i)=>`
     <div class="stop-card pending">
       <div class="stamp">?</div>
@@ -601,58 +617,6 @@ async function renderPending(){
   });
 }
 
-// --- Motore di posizionamento automatico ---
-
-function haversineKm(lat1,lng1,lat2,lng2){
-  const R = 6371;
-  const dLat = (lat2-lat1) * Math.PI/180;
-  const dLng = (lng2-lng1) * Math.PI/180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
-            Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function findNearestDay(lat, lng){
-  let best = null;
-  mapDays.forEach(day=>{
-    day.stops.forEach(s=>{
-      const d = haversineKm(lat, lng, s.lat, s.lng);
-      if(!best || d < best.dist){
-        best = { dist: d, mapDayKey: day.key, nearName: s.name };
-      }
-    });
-  });
-  return best;
-}
-
-function transportHint(distKm){
-  if(distKm < 1.2) return "A piedi (10-15 min)";
-  if(distKm < 8) return "Metro o treno locale";
-  if(distKm < 40) return "Treno regionale o bus";
-  if(distKm < 150) return "Treno con cambio (verificare tratta)";
-  return "Fuori zona — verificare collegamento aereo/Shinkansen";
-}
-
-async function geocodePlace(name){
-  const query = /giappone|japan/i.test(name) ? name : `${name}, Japan`;
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url, { headers: { "Accept-Language": "it" } });
-  if(!res.ok) throw new Error("Ricerca non riuscita");
-  const data = await res.json();
-  if(!data || !data.length) return null;
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-}
-
-function setStatus(msg, kind){
-  const el = document.getElementById('statusMsg');
-  el.textContent = msg;
-  el.className = "status-msg" + (kind ? " " + kind : "");
-  if(kind === "ok"){
-    setTimeout(()=>{ if(el.textContent === msg){ el.textContent = ""; el.className = "status-msg"; } }, 4000);
-  }
-}
-
 document.getElementById('addForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const input = document.getElementById('stopInput');
@@ -666,20 +630,17 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
 
   try{
     const coords = await geocodePlace(val);
-    if(!coords){
-      throw new Error("not-found");
-    }
+    if(!coords) throw new Error("not-found");
+
     const nearest = findNearestDay(coords.lat, coords.lng);
-    const itineraryKey = dayKeyToItineraryKey[nearest.mapDayKey] || nearest.mapDayKey;
-    const dayBlock = itinerary.find(b => b.day === itineraryKey);
+    const dayBlock = itineraryDays.find(b => b.day === nearest.day);
 
     const entry = {
       id: "auto_" + Date.now(),
       name: val,
       lat: coords.lat,
       lng: coords.lng,
-      itineraryKey: itineraryKey,
-      mapDayKey: nearest.mapDayKey,
+      itineraryKey: nearest.day,
       area: `Vicino a ${nearest.nearName} (~${nearest.dist.toFixed(1)} km)`,
       transport: transportHint(nearest.dist)
     };
@@ -690,24 +651,19 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
 
     input.value = "";
     render();
-    renderDaySelector();
-    // Attiva il tab della mappa del giorno appena assegnato
-    const pill = document.querySelector(`.day-pill[data-key="${nearest.mapDayKey}"]`);
-    if(pill){
-      document.querySelectorAll('.day-pill').forEach(b=>b.classList.remove('active'));
-      pill.classList.add('active');
-    }
-    renderMapDay(nearest.mapDayKey);
 
-    setStatus(`Aggiunta al ${dayBlock ? "Giorno " + dayBlock.day : "giorno più vicino"} — ${entry.transport.toLowerCase()}.`, "ok");
+    setStatus(`Aggiunta al Giorno ${nearest.day} — ${entry.transport.toLowerCase()}.`, "ok");
+
+    // Scorri alla giornata appena aggiornata
+    const target = document.querySelector(`.day-map[data-day="${nearest.day}"]`);
+    if(target) target.closest('.day-block').scrollIntoView({ behavior:"smooth", block:"center" });
   }catch(err){
-    // Ricerca fallita: la tappa resta in attesa, correggibile manualmente
     const list = await loadPending();
     list.push(val);
     await savePending(list);
     input.value = "";
     renderPending();
-    setStatus("Non trovato — controlla il nome. È stata messa in attesa qui sotto, riprova o correggi.", "err");
+    setStatus("Non trovato — controlla il nome. È in attesa qui sotto, riprova o correggi.", "err");
   }finally{
     btn.disabled = false;
     btn.textContent = "Aggiungi";
@@ -716,9 +672,6 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
 
 render();
 renderPending();
-initMap();
-renderDaySelector();
-renderMapDay(mapDays[0].key);
 </script>
 </body>
 </html>
