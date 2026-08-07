@@ -348,7 +348,7 @@ function render(){
   }).join("");
 
   list.querySelectorAll('[data-field]').forEach(el=>{
-    const evt = el.type === "checkbox" ? "change" : (el.tagName === "SELECT" ? "change" : "input");
+    const evt = "change";
     el.addEventListener(evt, ()=>{
       const id = el.dataset.id;
       const field = el.dataset.field;
