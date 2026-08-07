@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0E1728" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Budget viaggio — Giappone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-950:#0E1728;
+    --indigo-900:#131F38;
+    --indigo-800:#1C2E4E;
+    --washi:#F1ECDF;
+    --washi-dim:#C9C2AE;
+    --vermillion:#C1440E;
+    --vermillion-soft:#E0693A;
+    --gold:#C9A24B;
+    --moss:#6E8C6A;
+    --line: rgba(241,236,223,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    color:var(--washi);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(201,162,75,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(193,68,14,0.08), transparent 55%),
+      var(--indigo-950);
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:720px; margin:0 auto; padding:36px 20px 80px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+  .nav-link{
+    display:flex; width:fit-content; align-items:center; gap:6px;
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:8px 14px; border-radius:20px; font-size:12.5px; text-decoration:none;
+    font-family:'Zen Kaku Gothic New',sans-serif; margin-bottom:18px;
+  }
+  .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .eyebrow{
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:"旅"; font-family:'Shippori Mincho',serif; font-size:15px; color:var(--vermillion-soft);}
+  h1{
+    font-family:'Shippori Mincho', serif; font-weight:700;
+    font-size: clamp(24px,5vw,32px); margin:0 0 6px; line-height:1.15;
+  }
+  .sub{color:var(--washi-dim); font-size:14px; margin:0 0 24px;}
+
+  .summary{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:24px;
+  }
+  .summary-total{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .summary-total-label{font-size:12.5px; color:var(--washi-dim);}
+  .summary-total-value{font-family:'Shippori Mincho',serif; font-size:24px; font-weight:700; color:var(--gold);}
+  .summary-settlement{
+    font-size:14px; padding-top:10px; border-top:1px solid var(--line);
+    color:var(--washi); font-weight:700;
+  }
+  .summary-settlement.even{color:var(--moss);}
+
+  .item{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .item-desc{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 10px;}
+  .item-controls{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;}
+  .item-controls > div{flex:1; min-width:110px;}
+  .field-label{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--washi-dim); margin:0 0 4px; display:block;}
+  input[type=number], input[type=text], select{
+    width:100%; background:var(--indigo-950); border:1px solid var(--line);
+    color:var(--washi); padding:8px 10px; border-radius:7px; font-size:13px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  input:focus, select:focus{outline:none; border-color:var(--gold);}
+  .split-check{
+    display:flex; align-items:center; gap:6px; flex:0 0 auto; min-width:auto;
+    padding-bottom:8px;
+  }
+  .split-check input{width:auto;}
+  .split-check label{font-size:12px; color:var(--washi-dim); white-space:nowrap;}
+  .item-remove{
+    flex:0 0 auto; width:32px; height:32px; border-radius:7px;
+    background:transparent; border:1px solid var(--line); color:var(--washi-dim);
+    font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .item-remove:hover{border-color:var(--vermillion); color:var(--vermillion-soft);}
+
+  .add-panel{margin-top:30px; border-top:1px solid var(--line); padding-top:22px;}
+  .add-panel h2{font-family:'Shippori Mincho',serif; font-size:17px; margin:0 0 14px; font-weight:700;}
+  .add-form{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;}
+  .add-form > div{flex:1; min-width:120px;}
+  button{
+    background:var(--vermillion); color:var(--washi); border:none; padding:9px 16px;
+    border-radius:7px; font-size:13px; font-weight:700; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  button:hover{background:var(--vermillion-soft);}
+
+  @media (max-width: 640px){
+    .wrap{padding:22px 14px 64px;}
+    h1{font-size:24px;}
+    .item-controls > div, .add-form > div{min-width:100%;}
+    .split-check{padding-bottom:4px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="nav-link">← Torna all'itinerario</a>
+  <p class="eyebrow">Conti del viaggio</p>
+  <h1>Budget</h1>
+  <p class="sub">Spese, chi ha pagato e cosa va diviso — il saldo tra Max e Katia si calcola da solo.</p>
+
+  <div class="summary">
+    <div class="summary-total">
+      <span class="summary-total-label">Spesa totale</span>
+      <span class="summary-total-value" id="totalValue">€ 0,00</span>
+    </div>
+    <div class="summary-settlement" id="settlement"></div>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="add-panel">
+    <h2>Aggiungi una spesa</h2>
+    <form class="add-form" id="addForm">
+      <div>
+        <label class="field-label">Descrizione</label>
+        <input type="text" id="newDesc" placeholder="Es. Cena a Dotonbori" />
+      </div>
+      <div>
+        <label class="field-label">Spesa €</label>
+        <input type="number" id="newSpesa" step="0.01" placeholder="0,00" />
+      </div>
+      <div>
+        <label class="field-label">Pagato da</label>
+        <select id="newPaidBy">
+          <option value="">—</option>
+          <option value="Max">Max</option>
+          <option value="Katia">Katia</option>
+        </select>
+      </div>
+      <div class="split-check">
+        <input type="checkbox" id="newSplit" checked />
+        <label for="newSplit">Da dividere</label>
+      </div>
+      <button type="submit">Aggiungi</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const baseItems = [
+  {id:"b1", desc:"Voli internazionali", spesa:2306.30, paidBy:"Max", split:true},
+  {id:"b2", desc:"Polizza voli", spesa:198.82, paidBy:"Max", split:true},
+  {id:"b3", desc:"Voli interni Giappone", spesa:0, paidBy:"Max", split:true},
+  {id:"b4", desc:"Pernottamenti", spesa:3320.00, paidBy:"Max", split:true},
+  {id:"b5", desc:"Pernottamenti", spesa:3320.00, paidBy:"Katia", split:true},
+  {id:"b6", desc:"Polizza viaggio [AXA]", spesa:284.00, paidBy:"Max", split:true},
+  {id:"b7", desc:"Pernottamenti", spesa:1737.00, paidBy:"Max", split:true},
+  {id:"b8", desc:"Treni, metro e trasferimenti", spesa:0, paidBy:"", split:true},
+  {id:"b9", desc:"Auto Miyakojima", spesa:0, paidBy:"", split:true},
+  {id:"b10", desc:"Pasti e ristoranti", spesa:0, paidBy:"", split:true},
+  {id:"b11", desc:"Ingressi ed esperienze", spesa:0, paidBy:"", split:true},
+  {id:"b12", desc:"Polizza medica [EuropAssistance]", spesa:0, paidBy:"", split:true},
+  {id:"b13", desc:"Acquisti personali", spesa:0, paidBy:"", split:false},
+  {id:"b14", desc:"Regali e ricordi", spesa:0, paidBy:"", split:true},
+  {id:"b15", desc:"Fondo imprevisti", spesa:0, paidBy:"", split:true},
+];
+
+const OVERRIDES_KEY = "budget_overrides";
+const CUSTOM_KEY = "budget_custom_items";
+
+function loadOverrides(){
+  try{ const raw = localStorage.getItem(OVERRIDES_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch(e){ return {}; }
+}
+function saveOverrides(o){
+  try{ localStorage.setItem(OVERRIDES_KEY, JSON.stringify(o)); }
+  catch(e){ console.error(e); }
+}
+function loadCustom(){
+  try{ const raw = localStorage.getItem(CUSTOM_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveCustom(list){
+  try{ localStorage.setItem(CUSTOM_KEY, JSON.stringify(list)); }
+  catch(e){ console.error(e); }
+}
+
+function getAllItems(){
+  const overrides = loadOverrides();
+  const custom = loadCustom();
+  const base = baseItems.map(i => ({ ...i, ...(overrides[i.id]||{}) }));
+  return [...base, ...custom];
+}
+
+function fmtEuro(n){
+  return "€ " + n.toLocaleString("it-IT", {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function updateBaseField(id, patch){
+  const overrides = loadOverrides();
+  overrides[id] = { ...(overrides[id]||{}), ...patch };
+  saveOverrides(overrides);
+  render();
+}
+function updateCustomField(id, patch){
+  const list = loadCustom();
+  const idx = list.findIndex(i => i.id === id);
+  if(idx > -1){ list[idx] = { ...list[idx], ...patch }; saveCustom(list); render(); }
+}
+function removeCustom(id){
+  saveCustom(loadCustom().filter(i => i.id !== id));
+  render();
+}
+
+function render(){
+  const items = getAllItems();
+  const list = document.getElementById('list');
+
+  list.innerHTML = items.map(i => {
+    const isCustom = i.id.startsWith("custom_");
+    const updateFn = isCustom ? "updateCustomField" : "updateBaseField";
+    return `
+    <div class="item">
+      <p class="item-desc">${i.desc}</p>
+      <div class="item-controls">
+        <div>
+          <label class="field-label">Spesa €</label>
+          <input type="number" step="0.01" data-field="spesa" data-id="${i.id}" data-fn="${updateFn}" value="${i.spesa}" />
+        </div>
+        <div>
+          <label class="field-label">Pagato da</label>
+          <select data-field="paidBy" data-id="${i.id}" data-fn="${updateFn}">
+            <option value="" ${i.paidBy==="" ? "selected":""}>—</option>
+            <option value="Max" ${i.paidBy==="Max" ? "selected":""}>Max</option>
+            <option value="Katia" ${i.paidBy==="Katia" ? "selected":""}>Katia</option>
+          </select>
+        </div>
+        <div class="split-check">
+          <input type="checkbox" data-field="split" data-id="${i.id}" data-fn="${updateFn}" ${i.split ? "checked":""} id="split_${i.id}" />
+          <label for="split_${i.id}">Da dividere</label>
+        </div>
+        ${isCustom ? `<button type="button" class="item-remove" data-remove="${i.id}" title="Rimuovi">✕</button>` : ""}
+      </div>
+    </div>
+  `;
+  }).join("");
+
+  list.querySelectorAll('[data-field]').forEach(el=>{
+    const evt = el.type === "checkbox" ? "change" : (el.tagName === "SELECT" ? "change" : "input");
+    el.addEventListener(evt, ()=>{
+      const id = el.dataset.id;
+      const field = el.dataset.field;
+      const fn = el.dataset.fn === "updateCustomField" ? updateCustomField : updateBaseField;
+      let value;
+      if(field === "spesa") value = parseFloat(el.value) || 0;
+      else if(field === "split") value = el.checked;
+      else value = el.value;
+      fn(id, { [field]: value });
+    });
+  });
+  list.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', ()=> removeCustom(btn.dataset.remove));
+  });
+
+  // Totale e saldo
+  const total = items.reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
+  document.getElementById('totalValue').textContent = fmtEuro(total);
+
+  let maxPaidShared = 0, katiaPaidShared = 0;
+  items.filter(i => i.split).forEach(i=>{
+    const amt = parseFloat(i.spesa) || 0;
+    if(i.paidBy === "Max") maxPaidShared += amt;
+    if(i.paidBy === "Katia") katiaPaidShared += amt;
+  });
+  const sharedTotal = maxPaidShared + katiaPaidShared;
+  const halfShare = sharedTotal / 2;
+  const net = maxPaidShared - halfShare; // positivo: Max ha anticipato più della sua quota
+
+  const settlementEl = document.getElementById('settlement');
+  if(Math.abs(net) < 0.01){
+    settlementEl.className = "summary-settlement even";
+    settlementEl.textContent = "Conti in pareggio tra Max e Katia ✓";
+  } else if(net > 0){
+    settlementEl.className = "summary-settlement";
+    settlementEl.textContent = `Katia deve a Max ${fmtEuro(net)}`;
+  } else {
+    settlementEl.className = "summary-settlement";
+    settlementEl.textContent = `Max deve a Katia ${fmtEuro(Math.abs(net))}`;
+  }
+}
+
+document.getElementById('addForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const desc = document.getElementById('newDesc').value.trim();
+  const spesa = parseFloat(document.getElementById('newSpesa').value) || 0;
+  const paidBy = document.getElementById('newPaidBy').value;
+  const split = document.getElementById('newSplit').checked;
+  if(!desc) return;
+
+  const custom = loadCustom();
+  custom.push({ id: "custom_" + Date.now(), desc, spesa, paidBy, split });
+  saveCustom(custom);
+
+  document.getElementById('newDesc').value = "";
+  document.getElementById('newSpesa').value = "";
+  document.getElementById('newPaidBy').value = "";
+  document.getElementById('newSplit').checked = true;
+
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
