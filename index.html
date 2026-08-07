@@ -10,6 +10,8 @@
 <title>Itinerario Giappone — Diario di viaggio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
     --indigo-950:#0E1728;
@@ -98,6 +100,41 @@
   .pending{border-style:dashed; opacity:.85;}
   .pending .stop-meta{font-style:italic;}
 
+  .map-panel{
+    margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
+  }
+  .map-panel h2{
+    font-family:'Shippori Mincho',serif; font-size:19px; margin:0 0 6px; font-weight:700;
+  }
+  .map-panel p.map-sub{font-size:13px; color:var(--washi-dim); margin:0 0 16px; max-width:58ch; line-height:1.5;}
+  .day-selector{
+    display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .day-pill{
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi-dim);
+    padding:7px 13px; border-radius:20px; font-size:12.5px; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif; transition:background .15s, color .15s, border-color .15s;
+  }
+  .day-pill:hover{border-color:var(--gold);}
+  .day-pill.active{
+    background:var(--vermillion); color:var(--washi); border-color:var(--vermillion); font-weight:700;
+  }
+  #mapContainer{
+    width:100%; height:340px; border-radius:10px; overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .map-legend{
+    display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--washi-dim);
+  }
+  .map-legend span{display:flex; align-items:center; gap:6px;}
+  .legend-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .leaflet-popup-content-wrapper{
+    background:var(--indigo-800); color:var(--washi); border-radius:8px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .leaflet-popup-tip{background:var(--indigo-800);}
+  .leaflet-popup-content{font-size:13px; margin:10px 12px;}
+
   .add-panel{
     margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
   }
@@ -139,6 +176,9 @@
     input[type=text]{width:100%; min-width:0; font-size:16px; padding:13px 14px;}
     button{width:100%; padding:14px 18px; font-size:15px;}
     .add-panel{margin-top:34px; padding-top:22px;}
+    .map-panel{margin-top:34px; padding-top:22px;}
+    #mapContainer{height:280px;}
+    .day-pill{padding:8px 12px; font-size:12px;}
   }
 
   /* Tocco più comodo su touch: aree cliccabili più grandi, niente hover "appiccicoso" */
@@ -152,11 +192,23 @@
 
   <header>
     <p class="eyebrow">Diario di viaggio</p>
-    <h1>Giappone, 11–28 settembre 2026</h1>
+    <h1>Giappone, 10–29 settembre 2026</h1>
     <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto.</p>
   </header>
 
   <div class="spine" id="spine"></div>
+
+  <div class="map-panel">
+    <h2>Mappa degli spostamenti</h2>
+    <p class="map-sub">Seleziona un giorno per vedere dove dormite e come vi muovete.</p>
+    <div class="day-selector" id="daySelector"></div>
+    <div id="mapContainer"></div>
+    <div class="map-legend">
+      <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
+      <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
+      <span><span class="legend-dot" style="background:#6E8C6A"></span>Percorso</span>
+    </div>
+  </div>
 
   <div class="add-panel">
     <h2>Aggiungi una tappa</h2>
@@ -174,6 +226,7 @@
 <script>
 // --- Itinerario fisso (da preventivo Evaneos) ---
 const itinerary = [
+  {day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)"},
   {day:"1–2", date:"11–12 set", city:"Tokyo", note:"Arrivo, Ginza, Asakusa, Harajuku, Shibuya"},
   {day:"3", date:"13 set", city:"Kamakura", note:"Gita in giornata (pernotto Tokyo) — Grande Buddha, Odaiba"},
   {day:"4", date:"14 set", city:"Hakone", note:"Onsen, ryokan Yama No Chaya"},
@@ -182,6 +235,7 @@ const itinerary = [
   {day:"8–9", date:"18–19 set", city:"Osaka", note:"Castello, Dotonbori, eventuale Kobe/Himeji"},
   {day:"10–17", date:"20–27 set", city:"Okinawa · Miyakojima", note:"Mare, spiagge, giornate libere"},
   {day:"18", date:"28 set", city:"Tokyo", note:"Rientro in Italia"},
+  {day:"19", date:"29 set", city:"Milano Malpensa", note:"Malpensa → Casa in FlixBus (bus da prenotare)"},
 ];
 
 // --- Tappe extra: quelle già geolocalizzate e posizionate da Claude ---
@@ -196,6 +250,117 @@ const confirmedStops = [
 ];
 
 const STORAGE_KEY = "pending_stops";
+
+// --- Percorsi giorno per giorno per la mappa ---
+// Ogni giorno: lista di tappe nell'ordine dello spostamento + eventuali tappe extra confermate
+const mapDays = [
+  { key:"0", label:"Giorno 0", stops:[
+    {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"},
+    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"}
+  ]},
+  { key:"1", label:"Giorno 1", stops:[
+    {name:"Aeroporto di Tokyo", lat:35.5494, lng:139.7798, type:"stay"},
+    {name:"Tokyo (hotel Ginza)", lat:35.6717, lng:139.7650, type:"stay"}
+  ]},
+  { key:"2", label:"Giorno 2", stops:[
+    {name:"Asakusa", lat:35.7148, lng:139.7967, type:"day"},
+    {name:"Harajuku", lat:35.6702, lng:139.7026, type:"day"},
+    {name:"Shibuya", lat:35.6595, lng:139.7005, type:"day"}
+  ]},
+  { key:"3", label:"Giorno 3", stops:[
+    {name:"Tokyo", lat:35.6717, lng:139.7650, type:"stay"},
+    {name:"Kamakura", lat:35.3193, lng:139.5466, type:"day"},
+    {name:"Odaiba", lat:35.6267, lng:139.7752, type:"day"},
+    {name:"Tokyo (rientro)", lat:35.6717, lng:139.7650, type:"stay"}
+  ]},
+  { key:"4", label:"Giorno 4", stops:[
+    {name:"Tokyo (Shinjuku)", lat:35.6896, lng:139.7006, type:"stay"},
+    {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"}
+  ]},
+  { key:"5–6", label:"Giorno 5-6", stops:[
+    {name:"Hakone", lat:35.2324, lng:139.1074, type:"stay"},
+    {name:"Kyoto (Gion)", lat:35.0037, lng:135.7752, type:"stay"},
+    {name:"Padiglione d'Oro", lat:35.0394, lng:135.7292, type:"day"},
+    {name:"Arashiyama", lat:35.0094, lng:135.6683, type:"day"},
+    {name:"Yakiniku no GANSAN", lat:35.0074, lng:135.7712, type:"extra"}
+  ]},
+  { key:"7", label:"Giorno 7", stops:[
+    {name:"Fushimi Inari Taisha", lat:34.9671, lng:135.7727, type:"day"},
+    {name:"Nara", lat:34.6851, lng:135.8048, type:"day"}
+  ]},
+  { key:"8–9", label:"Giorno 8-9", stops:[
+    {name:"Kyoto", lat:35.0116, lng:135.7681, type:"stay"},
+    {name:"Osaka (Umeda)", lat:34.7025, lng:135.4959, type:"stay"},
+    {name:"Castello di Osaka", lat:34.6873, lng:135.5262, type:"day"},
+    {name:"Dotonbori", lat:34.6687, lng:135.5013, type:"day"}
+  ]},
+  { key:"10–17", label:"Giorno 10-17", stops:[
+    {name:"Osaka (Itami)", lat:34.7855, lng:135.4382, type:"stay"},
+    {name:"Miyakojima, Okinawa", lat:24.7828, lng:125.2814, type:"stay"}
+  ]},
+  { key:"18", label:"Giorno 18", stops:[
+    {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"},
+    {name:"Tokyo (Haneda)", lat:35.5494, lng:139.7798, type:"stay"}
+  ]},
+  { key:"19", label:"Giorno 19", stops:[
+    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
+    {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"}
+  ]},
+];
+
+let leafletMap, mapLayer;
+
+function initMap(){
+  leafletMap = L.map('mapContainer', { scrollWheelZoom:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    maxZoom: 18
+  }).addTo(leafletMap);
+  mapLayer = L.layerGroup().addTo(leafletMap);
+}
+
+function colorFor(type){
+  if(type === "extra") return "#C1440E";
+  if(type === "day") return "#C1440E";
+  return "#C9A24B";
+}
+
+function renderMapDay(dayKey){
+  mapLayer.clearLayers();
+  const day = mapDays.find(d => d.key === dayKey);
+  if(!day) return;
+
+  const latlngs = day.stops.map(s => [s.lat, s.lng]);
+
+  L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(mapLayer);
+
+  day.stops.forEach(s=>{
+    const marker = L.circleMarker([s.lat, s.lng], {
+      radius: 8,
+      fillColor: colorFor(s.type),
+      color: "#0E1728",
+      weight: 2,
+      fillOpacity: 1
+    }).addTo(mapLayer);
+    marker.bindPopup(`<strong>${s.name}</strong>`);
+  });
+
+  leafletMap.fitBounds(latlngs, { padding:[30,30], maxZoom:12 });
+}
+
+function renderDaySelector(){
+  const el = document.getElementById('daySelector');
+  el.innerHTML = mapDays.map((d,i)=>`
+    <button type="button" class="day-pill${i===0?' active':''}" data-key="${d.key}">${d.label}</button>
+  `).join("");
+  el.querySelectorAll('.day-pill').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      el.querySelectorAll('.day-pill').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMapDay(btn.dataset.key);
+    });
+  });
+}
 
 function render(){
   const spine = document.getElementById('spine');
@@ -232,8 +397,8 @@ function render(){
 
 async function loadPending(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    return res && res.value ? JSON.parse(res.value) : [];
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
   }catch(e){
     return [];
   }
@@ -241,7 +406,7 @@ async function loadPending(){
 
 async function savePending(list){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(list), false);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   }catch(e){
     console.error("Impossibile salvare:", e);
   }
@@ -279,6 +444,9 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
 
 render();
 renderPending();
+initMap();
+renderDaySelector();
+renderMapDay(mapDays[0].key);
 </script>
 </body>
 </html>
