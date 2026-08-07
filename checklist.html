@@ -67,6 +67,14 @@
   }
   .item.done{opacity:.6;}
   .item-activity{font-weight:700; font-size:14.5px; color:var(--washi); margin:0 0 8px;}
+  .item-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .item-head .item-activity{margin:0; flex:1;}
+  .item-remove{
+    flex:0 0 auto; width:26px; height:26px; border-radius:7px;
+    background:transparent; border:1px solid var(--line); color:var(--washi-dim);
+    font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .item-remove:hover{border-color:var(--vermillion); color:var(--vermillion-soft);}
   .item.done .item-activity{text-decoration:line-through;}
   .item-meta{font-size:11.5px; color:var(--washi-dim); display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
   .priority{
@@ -111,7 +119,7 @@
   }
   button:hover{background:var(--vermillion-soft);}
 
-  .chart-panel{margin-top:30px; border-top:1px solid var(--line); padding-top:22px;}
+  .chart-panel{margin-bottom:26px; padding-bottom:22px; border-bottom:1px solid var(--line);}
   .chart-panel h2{font-family:'Shippori Mincho',serif; font-size:17px; margin:0 0 16px; font-weight:700;}
   .chart-row{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
   .chart-legend{display:flex; flex-direction:column; gap:8px; font-size:13px;}
@@ -133,6 +141,14 @@
   <p class="eyebrow">Prima di partire</p>
   <h1>Checklist pre-partenza</h1>
   <p class="sub">Documenti, prenotazioni, budget, casa e bagagli — modifica stato e data direttamente qui.</p>
+
+  <div class="chart-panel">
+    <h2>Colpo d'occhio</h2>
+    <div class="chart-row">
+      <svg id="pieChart" viewBox="0 0 120 120" width="130" height="130"></svg>
+      <div class="chart-legend" id="chartLegend"></div>
+    </div>
+  </div>
 
   <div class="progress" id="progress"></div>
   <div id="list"></div>
@@ -166,14 +182,6 @@
       </div>
       <button type="submit">Aggiungi</button>
     </form>
-  </div>
-
-  <div class="chart-panel">
-    <h2>Colpo d'occhio</h2>
-    <div class="chart-row">
-      <svg id="pieChart" viewBox="0 0 120 120" width="130" height="130"></svg>
-      <div class="chart-legend" id="chartLegend"></div>
-    </div>
   </div>
 </div>
 
@@ -215,6 +223,26 @@ const checklistItems = [
 
 const OVERRIDES_KEY = "checklist_overrides_v2";
 const CUSTOM_KEY = "checklist_custom_items";
+const HIDDEN_KEY = "checklist_hidden_items";
+
+function loadHidden(){
+  try{ const raw = localStorage.getItem(HIDDEN_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveHidden(list){
+  try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(list)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
+}
+function deleteItem(id){
+  if(id.startsWith("custom_")){
+    saveCustomItems(loadCustomItems().filter(i => i.id !== id));
+  } else {
+    const hidden = loadHidden();
+    if(!hidden.includes(id)) hidden.push(id);
+    saveHidden(hidden);
+  }
+  render();
+}
 const priorityLabels = {"alta":"Alta", "media":"Media", "bassa":"Bassa"};
 
 function loadOverrides(){
@@ -294,9 +322,10 @@ function drawPieChart(doneCount, todoCount){
 
 function render(){
   const overrides = loadOverrides();
+  const hidden = loadHidden();
   const list = document.getElementById('list');
   const progressEl = document.getElementById('progress');
-  const allItems = getAllItems();
+  const allItems = getAllItems().filter(i => !hidden.includes(i.id));
 
   const states = allItems.map(i => ({ item:i, ...getItemState(i, overrides) }));
   const doneCount = states.filter(s => s.status === "fatto").length;
@@ -307,7 +336,10 @@ function render(){
 
   list.innerHTML = states.map(s => `
     <div class="item ${s.status === 'fatto' ? 'done' : ''}">
-      <p class="item-activity">${s.item.activity}</p>
+      <div class="item-head">
+        <p class="item-activity">${s.item.activity}</p>
+        <button type="button" class="item-remove" data-delete-id="${s.item.id}" title="Elimina azione">✕</button>
+      </div>
       <div class="item-meta">
         <span>${s.item.responsible}</span>
       </div>
@@ -344,6 +376,9 @@ function render(){
   });
   list.querySelectorAll('[data-date-id]').forEach(inp=>{
     inp.addEventListener('change', ()=> updateOverride(inp.dataset.dateId, { date: inp.value }));
+  });
+  list.querySelectorAll('[data-delete-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=> deleteItem(btn.dataset.deleteId));
   });
 
   drawPieChart(doneCount, todoCount);
