@@ -597,6 +597,14 @@ function render(){
   const hidden = loadHiddenConfirmed();
   const moves = loadMoves();
   const autoStops = loadAutoStops();
+
+  // Le mappe già disegnate sono legate a elementi DOM che stanno per essere distrutti:
+  // le rimuoviamo e azzeriamo il registro, così le nuove verranno ridisegnate correttamente.
+  Object.values(dayMaps).forEach(map=>{
+    try{ map.remove(); }catch(e){}
+  });
+  dayMaps = {};
+
   spine.innerHTML = "";
 
   const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
