@@ -159,6 +159,10 @@
     padding:2px 7px; border-radius:5px; box-shadow:none; white-space:nowrap;
   }
   .map-label::before{border-top-color:rgba(14,23,40,0.88) !important;}
+  .plane-icon{
+    font-size:20px; display:flex; align-items:center; justify-content:center;
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  }
 
   .add-panel{
     margin-top:44px; border-top:1px solid var(--line); padding-top:26px;
@@ -305,7 +309,8 @@ const dayKeyToItineraryKey = {
 const mapDays = [
   { key:"0", label:"Giorno 0", stops:[
     {name:"Casa (Genova)", lat:44.4056, lng:8.9463, type:"stay"},
-    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"}
+    {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
+    {name:"Volo per Tokyo Haneda", lat:35.5494, lng:139.7798, type:"flight"}
   ]},
   { key:"1", label:"Giorno 1", stops:[
     {name:"Aeroporto di Tokyo", lat:35.5494, lng:139.7798, type:"stay"},
@@ -350,7 +355,8 @@ const mapDays = [
   ]},
   { key:"18", label:"Giorno 18", stops:[
     {name:"Miyakojima", lat:24.7828, lng:125.2814, type:"stay"},
-    {name:"Tokyo (Haneda)", lat:35.5494, lng:139.7798, type:"stay"}
+    {name:"Tokyo (Haneda)", lat:35.5494, lng:139.7798, type:"stay"},
+    {name:"Volo per Milano Malpensa", lat:45.6306, lng:8.7231, type:"flight"}
   ]},
   { key:"19", label:"Giorno 19", stops:[
     {name:"Milano Malpensa (FlixBus)", lat:45.6306, lng:8.7231, type:"day"},
@@ -387,13 +393,25 @@ function renderMapDay(dayKey){
   L.polyline(latlngs, { color:"#6E8C6A", weight:3, opacity:0.8, dashArray:"6 6" }).addTo(mapLayer);
 
   allStops.forEach(s=>{
-    const marker = L.circleMarker([s.lat, s.lng], {
-      radius: 8,
-      fillColor: colorFor(s.type),
-      color: "#0E1728",
-      weight: 2,
-      fillOpacity: 1
-    }).addTo(mapLayer);
+    let marker;
+    if(s.type === "flight"){
+      marker = L.marker([s.lat, s.lng], {
+        icon: L.divIcon({
+          className: "plane-icon",
+          html: "✈️",
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        })
+      }).addTo(mapLayer);
+    } else {
+      marker = L.circleMarker([s.lat, s.lng], {
+        radius: 8,
+        fillColor: colorFor(s.type),
+        color: "#0E1728",
+        weight: 2,
+        fillOpacity: 1
+      }).addTo(mapLayer);
+    }
     marker.bindPopup(`<strong>${s.name}</strong>`);
     marker.bindTooltip(s.name, {
       permanent: true,
