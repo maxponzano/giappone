@@ -186,6 +186,52 @@
 </div>
 
 <script>
+// --- Sincronizzazione tra dispositivi (JSONBin.io) ---
+const SYNC_BIN_ID = "6a725047f5f4af5e29eb90dd";
+const SYNC_API_KEY = "$2a$10$vyaK6pjumhST4IJZswKO0OHDzXJVGaDpAC2ELHazrSn0gdGnuvPtm";
+const SYNC_URL = "https://api.jsonbin.io/v3/b/" + SYNC_BIN_ID;
+const _origSetItem = localStorage.setItem.bind(localStorage);
+
+function getAllLocalStorage(){
+  const obj = {};
+  for(let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    obj[k] = localStorage.getItem(k);
+  }
+  return obj;
+}
+
+async function syncPull(){
+  try{
+    const res = await fetch(SYNC_URL + "/latest", { headers: { "X-Master-Key": SYNC_API_KEY } });
+    if(!res.ok) return;
+    const data = await res.json();
+    const remote = data.record || {};
+    Object.keys(remote).forEach(k=>{
+      if(remote[k] !== null && remote[k] !== undefined) _origSetItem(k, remote[k]);
+    });
+  }catch(e){ console.warn("Sync non riuscito (offline?)", e); }
+}
+
+let syncPushTimer;
+function syncPush(){
+  clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(async ()=>{
+    try{
+      await fetch(SYNC_URL, {
+        method: "PUT",
+        headers: { "Content-Type":"application/json", "X-Master-Key": SYNC_API_KEY },
+        body: JSON.stringify(getAllLocalStorage())
+      });
+    }catch(e){ console.warn("Sync non riuscito (offline?)", e); }
+  }, 800);
+}
+
+localStorage.setItem = function(key, value){
+  _origSetItem(key, value);
+  syncPush();
+};
+
 const checklistItems = [
   {id:"c1", activity:"Verificare validità passaporto Max", responsible:"Max", deadline:"2026-05-31", priority:"alta", status:"dafare", notes:"Appuntamento il 7 agosto"},
   {id:"c2", activity:"Verificare validità passaporto Katia", responsible:"Katia", deadline:"2026-05-31", priority:"alta", status:"fatto", notes:""},
@@ -408,7 +454,10 @@ document.getElementById('addActionForm').addEventListener('submit', (e)=>{
   render();
 });
 
-render();
+(async () => {
+  await syncPull();
+  render();
+})();
 </script>
 </body>
 </html>
