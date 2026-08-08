@@ -317,6 +317,52 @@
 </div>
 
 <script>
+// --- Sincronizzazione tra dispositivi (JSONBin.io) ---
+const SYNC_BIN_ID = "6a725047f5f4af5e29eb90dd";
+const SYNC_API_KEY = "$2a$10$vyaK6pjumhST4IJZswKO0OHDzXJVGaDpAC2ELHazrSn0gdGnuvPtm";
+const SYNC_URL = "https://api.jsonbin.io/v3/b/" + SYNC_BIN_ID;
+const _origSetItem = localStorage.setItem.bind(localStorage);
+
+function getAllLocalStorage(){
+  const obj = {};
+  for(let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    obj[k] = localStorage.getItem(k);
+  }
+  return obj;
+}
+
+async function syncPull(){
+  try{
+    const res = await fetch(SYNC_URL + "/latest", { headers: { "X-Master-Key": SYNC_API_KEY } });
+    if(!res.ok) return;
+    const data = await res.json();
+    const remote = data.record || {};
+    Object.keys(remote).forEach(k=>{
+      if(remote[k] !== null && remote[k] !== undefined) _origSetItem(k, remote[k]);
+    });
+  }catch(e){ console.warn("Sync non riuscito (offline?)", e); }
+}
+
+let syncPushTimer;
+function syncPush(){
+  clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(async ()=>{
+    try{
+      await fetch(SYNC_URL, {
+        method: "PUT",
+        headers: { "Content-Type":"application/json", "X-Master-Key": SYNC_API_KEY },
+        body: JSON.stringify(getAllLocalStorage())
+      });
+    }catch(e){ console.warn("Sync non riuscito (offline?)", e); }
+  }, 800);
+}
+
+localStorage.setItem = function(key, value){
+  _origSetItem(key, value);
+  syncPush();
+};
+
 // --- Un giorno per blocco, con date, note e punti per la mappa ---
 const itineraryDays = [
   { day:"0", date:"10 set", city:"Milano Malpensa", note:"Casa → Malpensa in FlixBus (bus da prenotare)", desc:"Trasferimento in bus da casa a Milano Malpensa per il volo internazionale verso Tokyo Haneda.", stops:[
@@ -925,11 +971,14 @@ function updateCountdown(){
   `;
 }
 
-populateDaySelect();
-render();
-renderPending();
-updateCountdown();
-setInterval(updateCountdown, 1000);
+(async () => {
+  await syncPull();
+  populateDaySelect();
+  render();
+  renderPending();
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+})();
 </script>
 </body>
 </html>
