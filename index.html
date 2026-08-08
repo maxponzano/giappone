@@ -121,6 +121,14 @@
     padding:2px 8px; border-radius:20px;
   }
   .day-note{font-size:13px; color:var(--washi-dim); margin:4px 0 10px; max-width:56ch;}
+  .hotel-box{
+    display:flex; gap:10px; align-items:flex-start;
+    background:rgba(201,162,75,0.08); border:1px solid rgba(201,162,75,0.3);
+    border-radius:8px; padding:9px 12px; margin:0 0 12px;
+  }
+  .hotel-box-icon{font-size:15px; flex:0 0 auto; margin-top:1px;}
+  .hotel-box-name{font-size:12.5px; font-weight:700; color:var(--gold); margin:0 0 2px;}
+  .hotel-box-address{font-size:11.5px; color:var(--washi-dim); margin:0; line-height:1.4;}
 
   .stop-card{
     background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
@@ -452,6 +460,28 @@ const itineraryDays = [
 ];
 
 // --- Tappe extra: quelle già confermate e posizionate ---
+// --- Hotel per giorno (per emergenze) ---
+const hotelInfo = {
+  "1": {name:"The Square Hotel Ginza", address:"2-11-6 Ginza, Chuo-ku, Tokyo 104-0061", phone:"+81 3-3544-6811"},
+  "2": {name:"The Square Hotel Ginza", address:"2-11-6 Ginza, Chuo-ku, Tokyo 104-0061", phone:"+81 3-3544-6811"},
+  "3": {name:"The Square Hotel Ginza", address:"2-11-6 Ginza, Chuo-ku, Tokyo 104-0061", phone:"+81 3-3544-6811"},
+  "4": {name:"Ryokan Yama No Chaya", address:"171 Tonosawa, Hakone, Ashigarashimo District 250-0315", phone:"+81 460-85-5493"},
+  "5": {name:"Hotel Tou Nishinotoin Kyoto", address:"455 Nishinotoincho, Shimogyo-ku, Kyoto 600-8327", phone:"+81 75-744-0144"},
+  "6": {name:"Hotel Tou Nishinotoin Kyoto", address:"455 Nishinotoincho, Shimogyo-ku, Kyoto 600-8327", phone:"+81 75-744-0144"},
+  "7": {name:"Hotel Tou Nishinotoin Kyoto", address:"455 Nishinotoincho, Shimogyo-ku, Kyoto 600-8327", phone:"+81 75-744-0144"},
+  "8": {name:"Hotel Intergate Osaka Umeda", address:"2-5-2 Umeda, Kita-ku, Osaka-shi 530-0001", phone:""},
+  "9": {name:"Hotel Intergate Osaka Umeda", address:"2-5-2 Umeda, Kita-ku, Osaka-shi 530-0001", phone:""},
+  "10": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "11": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "12": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "13": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "14": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "15": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "16": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "17": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+  "18": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima, Okinawa 906-0107", phone:"+81 980-77-7859"},
+};
+
 const confirmedStops = [
   {
     name:"Yakiniku no GANSAN",
@@ -671,6 +701,14 @@ function render(){
         <span class="day-city">${block.city}</span>
       </div>
       <p class="day-note">${block.note}</p>
+      ${hotelInfo[block.day] ? `
+      <div class="hotel-box">
+        <span class="hotel-box-icon">🏨</span>
+        <div class="hotel-box-body">
+          <p class="hotel-box-name">${hotelInfo[block.day].name}</p>
+          <p class="hotel-box-address">${hotelInfo[block.day].address}${hotelInfo[block.day].phone ? " · " + hotelInfo[block.day].phone : ""}</p>
+        </div>
+      </div>` : ""}
       <details class="day-details" open>
         <summary>Descrizione e note del giorno</summary>
         <div class="day-details-body">
