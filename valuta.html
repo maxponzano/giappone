@@ -167,10 +167,24 @@ let eurToJpy = null;
 
 async function loadRate(){
   try{
-    const res = await fetch("https://api.frankfurter.app/latest?from=EUR&to=JPY");
+    const res = await fetch("https://api.frankfurter.dev/v1/latest?base=EUR&symbols=JPY");
+    if(!res.ok) throw new Error("bad response");
     const data = await res.json();
+    if(!data.rates || !data.rates.JPY) throw new Error("no rate");
     eurToJpy = data.rates.JPY;
     document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (aggiornato al ${data.date})`;
+    updateFromEur();
+    return;
+  }catch(e){
+    console.warn("Fonte primaria non disponibile, provo la fonte di riserva.", e);
+  }
+  try{
+    const res2 = await fetch("https://open.er-api.com/v6/latest/EUR");
+    if(!res2.ok) throw new Error("bad response");
+    const data2 = await res2.json();
+    if(!data2.rates || !data2.rates.JPY) throw new Error("no rate");
+    eurToJpy = data2.rates.JPY;
+    document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (fonte di riserva)`;
     updateFromEur();
   }catch(e){
     document.getElementById('rateNote').textContent = "Tasso di cambio non disponibile (serve connessione internet).";
