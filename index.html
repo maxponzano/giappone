@@ -932,6 +932,20 @@ function renderMasterMap(){
   }).addTo(map);
   const layer = L.layerGroup().addTo(map);
 
+  // --- Collegamenti tratteggiati per i voli principali ---
+  const MALPENSA = [45.6306, 8.7231];
+  const HANEDA = [35.5494, 139.7798];
+  const OSAKA_ITAMI = [34.7855, 135.4382];
+  const MIYAKOJIMA = [24.7828, 125.2814];
+
+  L.polyline([MALPENSA, HANEDA], {
+    color:"#C9A24B", weight:2.5, opacity:0.75, dashArray:"9 7"
+  }).addTo(layer);
+
+  L.polyline([OSAKA_ITAMI, MIYAKOJIMA], {
+    color:"#C9A24B", weight:2.5, opacity:0.75, dashArray:"9 7"
+  }).addTo(layer);
+
   const allPoints = [];
   itineraryDays.forEach(day=>{
     day.stops.forEach(s=>{
