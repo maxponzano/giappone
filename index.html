@@ -131,6 +131,40 @@
   .map-legend span{display:flex; align-items:center; gap:6px;}
   .legend-dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
 
+  .master-map-wrap{margin-top:14px;}
+  .master-map{
+    width:100%; height:280px; border-radius:10px; overflow:hidden;
+    border:1px solid var(--line); background:var(--indigo-900);
+  }
+  .master-map-note{font-size:11.5px; color:var(--washi-dim); margin:8px 0 0;}
+
+  .back-link{margin-bottom:22px;}
+
+  .day-summary-card{
+    display:block; text-decoration:none; color:inherit; position:relative;
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px;
+    padding:14px 40px 14px 16px; margin-bottom:10px; margin-left:4px;
+    transition:border-color .15s;
+  }
+  .day-summary-card::before{
+    content:""; position:absolute; left:-25px; top:18px; width:10px; height:10px;
+    border-radius:50%; background:var(--indigo-950); border:1.5px solid var(--gold);
+  }
+  .day-summary-card:hover{border-color:var(--gold);}
+  .day-summary-card.today-highlight{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold);}
+  .day-summary-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px;}
+  .day-summary-note{font-size:12.5px; color:var(--washi-dim); margin:2px 0 0; max-width:56ch;}
+  .day-summary-hotel{font-size:11.5px; color:var(--gold); margin-top:7px;}
+  .day-summary-badge{
+    font-size:10.5px; color:var(--vermillion-soft); margin-top:6px;
+    display:inline-flex; align-items:center; gap:4px;
+  }
+  .day-summary-arrow{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    color:var(--washi-dim); font-size:16px;
+  }
+
   .spine{position:relative; margin-top:24px; padding-left:26px;}
   .spine::before{
     content:""; position:absolute; left:5px; top:6px; bottom:6px; width:1px;
@@ -210,6 +244,7 @@
     background:var(--indigo-900);
     display:flex; align-items:center; justify-content:center;
   }
+  .day-map-detail{height:320px;}
   .day-map .map-placeholder{
     font-size:11.5px; color:var(--washi-dim); font-style:italic;
   }
@@ -301,6 +336,7 @@
     .stop-meta{flex-direction:column; gap:5px;}
     .stop-move-select{max-width:none; flex:1;}
     .day-map{height:160px;}
+    .day-map-detail{height:240px;}
     .countdown{gap:7px; margin-top:16px;}
     .countdown-unit{padding:8px 10px; min-width:52px;}
     .countdown-num{font-size:19px;}
@@ -338,36 +374,46 @@
     <img src="cover.jpg" alt="Max e Katia in Giappone" />
   </div>
 
-  <div class="today-row">
-    <button type="button" id="goTodayBtn" class="today-btn">📍 Vai a oggi</button>
-    <span id="todayStatus" class="today-status"></span>
+  <div id="overviewSection">
+    <div class="today-row">
+      <button type="button" id="goTodayBtn" class="today-btn">📍 Vai a oggi</button>
+      <span id="todayStatus" class="today-status"></span>
+    </div>
+
+    <div class="weather-widget" id="weatherWidget">
+      <p class="weather-title" id="weatherCity">Meteo</p>
+      <div class="weather-days" id="weatherDays"><span class="weather-loading">Caricamento meteo…</span></div>
+    </div>
+
+    <div class="map-legend">
+      <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
+      <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
+      <span>✈️ Volo</span>
+    </div>
+    <div class="master-map-wrap">
+      <div class="master-map" id="masterMap"></div>
+      <p class="master-map-note">Colpo d'occhio su tutte le tappe del viaggio. Tocca un punto per aprire quel giorno.</p>
+    </div>
+
+    <div class="spine" id="spine"></div>
+
+    <div class="add-panel">
+      <h2>Aggiungi una tappa</h2>
+      <p>Scrivi il nome del posto: l'app lo cerca da sola e calcola il giorno più vicino. Se preferisci scegliere tu il giorno, selezionalo dal menu. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
+      <form id="addForm">
+        <input type="text" id="stopInput" placeholder="Es. Nishiki Market" />
+        <select id="daySelect"></select>
+        <button type="submit" id="addBtn">Aggiungi</button>
+      </form>
+      <div id="statusMsg" class="status-msg"></div>
+      <div id="pendingList"></div>
+      <p class="foot-note">Le tappe con timbro rosso sono già posizionate automaticamente. Se la ricerca non trova il posto, resta in attesa con timbro grigio — puoi correggerne il nome e riprovare (↻), oppure eliminarla (✕).</p>
+    </div>
   </div>
 
-  <div class="weather-widget" id="weatherWidget">
-    <p class="weather-title" id="weatherCity">Meteo</p>
-    <div class="weather-days" id="weatherDays"><span class="weather-loading">Caricamento meteo…</span></div>
-  </div>
-
-  <div class="map-legend">
-    <span><span class="legend-dot" style="background:#4CAF6B"></span>Partenza della giornata</span>
-    <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
-    <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
-    <span>✈️ Volo</span>
-  </div>
-
-  <div class="spine" id="spine"></div>
-
-  <div class="add-panel">
-    <h2>Aggiungi una tappa</h2>
-    <p>Scrivi il nome del posto: l'app lo cerca da sola e calcola il giorno più vicino. Se preferisci scegliere tu il giorno, selezionalo dal menu. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
-    <form id="addForm">
-      <input type="text" id="stopInput" placeholder="Es. Nishiki Market" />
-      <select id="daySelect"></select>
-      <button type="submit" id="addBtn">Aggiungi</button>
-    </form>
-    <div id="statusMsg" class="status-msg"></div>
-    <div id="pendingList"></div>
-    <p class="foot-note">Le tappe con timbro rosso sono già posizionate automaticamente. Se la ricerca non trova il posto, resta in attesa con timbro grigio — puoi correggerne il nome e riprovare (↻), oppure eliminarla (✕).</p>
+  <div id="dayDetailSection" style="display:none;">
+    <a href="index.html" class="nav-link back-link">← Torna alla lista dei giorni</a>
+    <div id="dayDetailContent"></div>
   </div>
 
 </div>
@@ -595,9 +641,7 @@ function moveConfirmedStop(name, oldDay, newDay){
   const moves = loadMoves();
   moves[name] = newDay;
   saveMoves(moves);
-  render();
-  refreshDayMap(oldDay);
-  refreshDayMap(newDay);
+  renderDayDetail(oldDay);
 }
 function moveAutoStop(id, oldDay, newDay){
   if(oldDay === newDay) return;
@@ -605,9 +649,7 @@ function moveAutoStop(id, oldDay, newDay){
   const item = autoStops.find(s => s.id === id);
   if(item) item.itineraryKey = newDay;
   saveAutoStops(autoStops);
-  render();
-  refreshDayMap(oldDay);
-  refreshDayMap(newDay);
+  renderDayDetail(oldDay);
 }
 const AUTO_KEY = "auto_stops";
 
@@ -666,36 +708,7 @@ function drawDayMap(container, day){
   }
 }
 
-function initLazyMaps(){
-  const observer = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      if(entry.isIntersecting){
-        const container = entry.target;
-        const dayKey = container.dataset.day;
-        const day = itineraryDays.find(d => d.day === dayKey);
-        if(day && !dayMaps[dayKey]){
-          container.innerHTML = "";
-          drawDayMap(container, day);
-        }
-        observer.unobserve(container);
-      }
-    });
-  }, { rootMargin: "200px 0px" });
 
-  document.querySelectorAll('.day-map').forEach(el => observer.observe(el));
-}
-
-function refreshDayMap(dayKey){
-  const container = document.querySelector(`.day-map[data-day="${dayKey}"]`);
-  if(!container) return;
-  if(dayMaps[dayKey]){
-    dayMaps[dayKey].remove();
-    delete dayMaps[dayKey];
-  }
-  container.innerHTML = "";
-  const day = itineraryDays.find(d => d.day === dayKey);
-  if(day) drawDayMap(container, day);
-}
 
 function loadHiddenConfirmed(){
   try{ const raw = localStorage.getItem(HIDDEN_KEY); return raw ? JSON.parse(raw) : []; }
@@ -709,8 +722,7 @@ function removeConfirmedStop(name, day){
   const hidden = loadHiddenConfirmed();
   if(!hidden.includes(name)) hidden.push(name);
   saveHiddenConfirmed(hidden);
-  render();
-  refreshDayMap(day);
+  renderDayDetail(day);
 }
 
 function loadAutoStops(){
@@ -724,8 +736,26 @@ function saveAutoStops(list){
 function removeAutoStop(id, day){
   const list = loadAutoStops().filter(s => s.id !== id);
   saveAutoStops(list);
-  render();
-  refreshDayMap(day);
+  renderDayDetail(day);
+}
+
+function getUrlDay(){
+  const params = new URLSearchParams(location.search);
+  const d = params.get('day');
+  return itineraryDays.some(x => x.day === d) ? d : null;
+}
+
+function goToDay(dayKey){
+  location.href = "index.html?day=" + dayKey;
+}
+
+function showOverview(){
+  document.getElementById('overviewSection').style.display = "";
+  document.getElementById('dayDetailSection').style.display = "none";
+}
+function showDayDetail(){
+  document.getElementById('overviewSection').style.display = "none";
+  document.getElementById('dayDetailSection').style.display = "";
 }
 
 function render(){
@@ -733,29 +763,53 @@ function render(){
   const hidden = loadHiddenConfirmed();
   const moves = loadMoves();
   const autoStops = loadAutoStops();
-
-  // Le mappe già disegnate sono legate a elementi DOM che stanno per essere distrutti:
-  // le rimuoviamo e azzeriamo il registro, così le nuove verranno ridisegnate correttamente.
-  Object.values(dayMaps).forEach(map=>{
-    try{ map.remove(); }catch(e){}
-  });
-  dayMaps = {};
+  const todayKey = getTodayDayKey();
 
   spine.innerHTML = "";
 
-  const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
-
   itineraryDays.forEach(block=>{
-    const div = document.createElement('div');
-    div.className = "day-block" + (block.day === getTodayDayKey() ? " today-highlight" : "");
-    div.id = "day-" + block.day;
-    const fixedStops = confirmedStops.filter(s=>{
+    const fixedCount = confirmedStops.filter(s=>{
       const effectiveDay = moves[s.name] || s.attachTo;
       return effectiveDay === block.day && !hidden.includes(s.name);
-    });
-    const myStops = autoStops.filter(s=>s.itineraryKey === block.day);
-    div.innerHTML = `
-      <div class="node"></div>
+    }).length;
+    const autoCount = autoStops.filter(s => s.itineraryKey === block.day).length;
+    const extraCount = fixedCount + autoCount;
+
+    const a = document.createElement('a');
+    a.href = "index.html?day=" + block.day;
+    a.className = "day-summary-card" + (block.day === todayKey ? " today-highlight" : "");
+    a.innerHTML = `
+      <div class="day-summary-head">
+        <span class="day-label">Giorno ${block.day}</span>
+        <span class="day-date">${block.date}</span>
+        <span class="day-city">${block.city}</span>
+      </div>
+      <p class="day-summary-note">${block.note}</p>
+      ${hotelInfo[block.day] ? `<p class="day-summary-hotel">🏨 ${hotelInfo[block.day].name}</p>` : ""}
+      ${extraCount > 0 ? `<p class="day-summary-badge">📍 ${extraCount} tappa${extraCount>1?"e":""} extra</p>` : ""}
+      <span class="day-summary-arrow">›</span>
+    `;
+    spine.appendChild(a);
+  });
+}
+
+function renderDayDetail(dayKey){
+  const container = document.getElementById('dayDetailContent');
+  const hidden = loadHiddenConfirmed();
+  const moves = loadMoves();
+  const autoStops = loadAutoStops();
+  const block = itineraryDays.find(d => d.day === dayKey);
+  if(!block) return;
+
+  const fixedStops = confirmedStops.filter(s=>{
+    const effectiveDay = moves[s.name] || s.attachTo;
+    return effectiveDay === dayKey && !hidden.includes(s.name);
+  });
+  const myStops = autoStops.filter(s => s.itineraryKey === dayKey);
+  const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
+
+  container.innerHTML = `
+    <div class="day-block">
       <div class="day-head">
         <span class="day-label">Giorno ${block.day}</span>
         <span class="day-date">${block.date}</span>
@@ -770,6 +824,13 @@ function render(){
           <p class="hotel-box-address">${hotelInfo[block.day].address}${hotelInfo[block.day].phone ? " · " + hotelInfo[block.day].phone : ""}</p>
         </div>
       </div>` : ""}
+      <div class="map-legend" style="margin-top:0 0 14px;">
+        <span><span class="legend-dot" style="background:#4CAF6B"></span>Partenza</span>
+        <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
+        <span><span class="legend-dot" style="background:#C1440E"></span>Tappa</span>
+        <span>✈️ Volo</span>
+      </div>
+      <div class="day-map day-map-detail" data-day="${block.day}" id="detailMap"></div>
       <details class="day-details" open>
         <summary>Descrizione e note del giorno</summary>
         <div class="day-details-body">
@@ -814,34 +875,31 @@ function render(){
           <button type="button" class="stop-remove" data-remove-auto="${s.id}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
-      <div class="day-map" data-day="${block.day}"><span class="map-placeholder">Caricamento mappa…</span></div>
-    `;
-    spine.appendChild(div);
-  });
+    </div>
+  `;
 
-  spine.querySelectorAll('[data-remove-confirmed]').forEach(btn=>{
+  container.querySelectorAll('[data-remove-confirmed]').forEach(btn=>{
     btn.addEventListener('click', ()=> removeConfirmedStop(btn.dataset.removeConfirmed, btn.dataset.day));
   });
-  spine.querySelectorAll('[data-remove-auto]').forEach(btn=>{
+  container.querySelectorAll('[data-remove-auto]').forEach(btn=>{
     btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto, btn.dataset.day));
   });
-  spine.querySelectorAll('[data-move-confirmed]').forEach(sel=>{
+  container.querySelectorAll('[data-move-confirmed]').forEach(sel=>{
     sel.value = sel.dataset.day;
     sel.addEventListener('change', ()=> moveConfirmedStop(sel.dataset.moveConfirmed, sel.dataset.day, sel.value));
   });
-  spine.querySelectorAll('[data-move-auto]').forEach(sel=>{
+  container.querySelectorAll('[data-move-auto]').forEach(sel=>{
     sel.value = sel.dataset.day;
     sel.addEventListener('change', ()=> moveAutoStop(sel.dataset.moveAuto, sel.dataset.day, sel.value));
   });
-
-  spine.querySelectorAll('[data-notes-day]').forEach(textarea=>{
+  container.querySelectorAll('[data-notes-day]').forEach(textarea=>{
     let debounceTimer;
     textarea.addEventListener('input', ()=>{
       const day = textarea.dataset.notesDay;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(()=>{
         saveDayNote(day, textarea.value);
-        const status = spine.querySelector(`[data-notes-status="${day}"]`);
+        const status = container.querySelector(`[data-notes-status="${day}"]`);
         if(status){
           status.textContent = "Salvato ✓";
           setTimeout(()=>{ if(status.textContent === "Salvato ✓") status.textContent = ""; }, 2000);
@@ -850,8 +908,59 @@ function render(){
     });
   });
 
-  initLazyMaps();
+  const mapContainer = document.getElementById('detailMap');
+  if(dayMaps[dayKey]){ try{ dayMaps[dayKey].remove(); }catch(e){} delete dayMaps[dayKey]; }
+  drawDayMap(mapContainer, block);
 }
+
+let masterMapInstance = null;
+function renderMasterMap(){
+  const container = document.getElementById('masterMap');
+  if(!container) return;
+  if(masterMapInstance){
+    try{ masterMapInstance.remove(); }catch(e){}
+    masterMapInstance = null;
+  }
+  container.innerHTML = "";
+
+  const autoStops = loadAutoStops();
+  const map = L.map(container, { scrollWheelZoom:false });
+  masterMapInstance = map;
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    maxZoom: 18
+  }).addTo(map);
+  const layer = L.layerGroup().addTo(map);
+
+  const allPoints = [];
+  itineraryDays.forEach(day=>{
+    day.stops.forEach(s=>{
+      allPoints.push({ ...s, day: day.day });
+    });
+  });
+  autoStops.forEach(s=>{
+    allPoints.push({ name:s.name, lat:s.lat, lng:s.lng, type:"extra", day:s.itineraryKey });
+  });
+
+  allPoints.forEach(s=>{
+    let marker;
+    if(s.type === "flight"){
+      marker = L.marker([s.lat, s.lng], {
+        icon: L.divIcon({ className:"plane-icon", html:"✈️", iconSize:[20,20], iconAnchor:[10,10] })
+      }).addTo(layer);
+    } else {
+      marker = L.circleMarker([s.lat, s.lng], {
+        radius: 6, fillColor: colorFor(s.type), color:"#0E1728", weight:1.5, fillOpacity:1
+      }).addTo(layer);
+    }
+    marker.bindPopup(`<strong>${s.name}</strong><br><a href="index.html?day=${s.day}" style="color:#C9A24B;">Vai al Giorno ${s.day} →</a>`);
+  });
+
+  const boundsPoints = allPoints.map(s=>[s.lat, s.lng]);
+  if(boundsPoints.length) map.fitBounds(boundsPoints, { padding:[20,20] });
+}
+
+
 
 // --- Motore di posizionamento automatico ---
 
@@ -1025,12 +1134,9 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
     input.value = "";
     daySelect.value = "";
     render();
+    renderMasterMap();
 
     setStatus(`Aggiunta al Giorno ${targetDay} — ${entry.transport.toLowerCase()}.`, "ok");
-
-    // Scorri alla giornata appena aggiornata
-    const target = document.querySelector(`.day-map[data-day="${targetDay}"]`);
-    if(target) target.closest('.day-block').scrollIntoView({ behavior:"smooth", block:"center" });
   }catch(err){
     const list = await loadPending();
     list.push(val);
@@ -1088,8 +1194,7 @@ document.getElementById('goTodayBtn').addEventListener('click', ()=>{
     setTimeout(()=>{ statusEl.textContent = ""; }, 3000);
     return;
   }
-  const el = document.getElementById('day-' + key);
-  if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
+  goToDay(key);
 });
 
 // --- Meteo (Open-Meteo, gratuito senza chiave) ---
@@ -1136,11 +1241,20 @@ async function loadWeather(){
 (async () => {
   await syncPull();
   populateDaySelect();
-  render();
-  renderPending();
   updateCountdown();
   setInterval(updateCountdown, 1000);
-  loadWeather();
+
+  const urlDay = getUrlDay();
+  if(urlDay){
+    showDayDetail();
+    renderDayDetail(urlDay);
+  } else {
+    showOverview();
+    render();
+    renderMasterMap();
+    renderPending();
+    loadWeather();
+  }
 })();
 
 if('serviceWorker' in navigator){
