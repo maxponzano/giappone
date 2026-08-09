@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0E1728" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>Cambio € → ¥ — Giappone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-950:#0E1728; --indigo-900:#131F38; --indigo-800:#1C2E4E;
+    --washi:#F1ECDF; --washi-dim:#C9C2AE;
+    --vermillion:#C1440E; --vermillion-soft:#E0693A;
+    --gold:#C9A24B; --moss:#6E8C6A; --line: rgba(241,236,223,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif; color:var(--washi);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(201,162,75,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(193,68,14,0.08), transparent 55%),
+      var(--indigo-950);
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:560px; margin:0 auto; padding:36px 20px 80px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+  .nav-link{
+    display:flex; width:fit-content; align-items:center; gap:6px;
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:8px 14px; border-radius:20px; font-size:12.5px; text-decoration:none;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .nav-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .sync-status{font-size:11px; color:var(--washi-dim); margin-bottom:18px; display:flex; align-items:center; gap:6px;}
+  .sync-dot{width:7px; height:7px; border-radius:50%; background:var(--moss); display:inline-block;}
+  .sync-dot.syncing{background:var(--gold); animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--vermillion);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .eyebrow{
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:"円"; font-family:'Shippori Mincho',serif; font-size:15px; color:var(--vermillion-soft);}
+  h1{
+    font-family:'Shippori Mincho', serif; font-weight:700;
+    font-size: clamp(24px,5vw,32px); margin:0 0 6px; line-height:1.15;
+  }
+  .sub{color:var(--washi-dim); font-size:14px; margin:0 0 24px;}
+
+  .card{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:12px; padding:22px;
+  }
+  .converter-row{display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+  .converter-side{flex:1; min-width:130px;}
+  .field-label{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--washi-dim); margin:0 0 6px; display:block;}
+  input[type=number]{
+    width:100%; background:var(--indigo-950); border:1px solid var(--line);
+    color:var(--washi); padding:12px 14px; border-radius:8px; font-size:20px;
+    font-family:'Shippori Mincho',serif; font-weight:700;
+  }
+  input:focus{outline:none; border-color:var(--gold);}
+  .swap-icon{font-size:20px; color:var(--gold); padding-top:18px;}
+  .result-box{
+    margin-top:4px; font-size:32px; font-family:'Shippori Mincho',serif; font-weight:700;
+    color:var(--gold);
+  }
+  .rate-note{font-size:12px; color:var(--washi-dim); margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+
+  .quick-amounts{display:flex; gap:8px; flex-wrap:wrap; margin-top:18px;}
+  .quick-btn{
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:7px 13px; border-radius:20px; font-size:12.5px; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .quick-btn:hover{border-color:var(--gold); color:var(--gold);}
+
+  @media (max-width: 640px){
+    .wrap{padding:22px 14px 64px;}
+    h1{font-size:24px;}
+    .result-box{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav-row">
+    <a href="index.html" class="nav-link">← Itinerario</a>
+    <a href="emergenza.html" class="nav-link">🆘 Emergenza</a>
+  </div>
+  <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Sincronizzato</span></div>
+
+  <p class="eyebrow">Quanto costa davvero</p>
+  <h1>Cambio € → ¥</h1>
+  <p class="sub">Conversione rapida al tasso di cambio aggiornato.</p>
+
+  <div class="card">
+    <div class="converter-row">
+      <div class="converter-side">
+        <label class="field-label">Euro</label>
+        <input type="number" id="eurInput" value="10" />
+      </div>
+      <div class="swap-icon">→</div>
+      <div class="converter-side">
+        <label class="field-label">Yen</label>
+        <input type="number" id="jpyInput" />
+      </div>
+    </div>
+    <div class="quick-amounts">
+      <button type="button" class="quick-btn" data-amt="5">€5</button>
+      <button type="button" class="quick-btn" data-amt="10">€10</button>
+      <button type="button" class="quick-btn" data-amt="20">€20</button>
+      <button type="button" class="quick-btn" data-amt="50">€50</button>
+      <button type="button" class="quick-btn" data-amt="100">€100</button>
+    </div>
+    <p class="rate-note" id="rateNote">Caricamento tasso di cambio...</p>
+  </div>
+</div>
+
+<script>
+// --- Sincronizzazione tra dispositivi (JSONBin.io) ---
+const SYNC_BIN_ID = "6a725047f5f4af5e29eb90dd";
+const SYNC_API_KEY = "$2a$10$vyaK6pjumhST4IJZswKO0OHDzXJVGaDpAC2ELHazrSn0gdGnuvPtm";
+const SYNC_URL = "https://api.jsonbin.io/v3/b/" + SYNC_BIN_ID;
+const _origSetItem = localStorage.setItem.bind(localStorage);
+
+function setSyncStatus(state){
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if(!dot || !text) return;
+  dot.className = "sync-dot" + (state === "syncing" ? " syncing" : state === "error" ? " error" : "");
+  text.textContent = state === "syncing" ? "Sincronizzazione..." : state === "error" ? "Sincronizzazione non riuscita (offline?)" : "Sincronizzato";
+}
+
+async function syncPull(){
+  setSyncStatus("syncing");
+  try{
+    const res = await fetch(SYNC_URL + "/latest", { headers: { "X-Master-Key": SYNC_API_KEY } });
+    if(!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    const remote = data.record || {};
+    Object.keys(remote).forEach(k=>{
+      if(remote[k] !== null && remote[k] !== undefined) _origSetItem(k, remote[k]);
+    });
+    setSyncStatus("ok");
+  }catch(e){ setSyncStatus("error"); console.warn("Sync non riuscito (offline?)", e); }
+}
+
+// Il convertitore non scrive dati propri, ma manteniamo lo stesso pattern
+// per coerenza e per riflettere lo stato di sync delle altre pagine.
+localStorage.setItem = function(key, value){
+  _origSetItem(key, value);
+};
+
+// --- Convertitore valuta (Frankfurter API, gratuita senza chiave) ---
+let eurToJpy = null;
+
+async function loadRate(){
+  try{
+    const res = await fetch("https://api.frankfurter.app/latest?from=EUR&to=JPY");
+    const data = await res.json();
+    eurToJpy = data.rates.JPY;
+    document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (aggiornato al ${data.date})`;
+    updateFromEur();
+  }catch(e){
+    document.getElementById('rateNote').textContent = "Tasso di cambio non disponibile (serve connessione internet).";
+  }
+}
+
+function updateFromEur(){
+  const eur = parseFloat(document.getElementById('eurInput').value) || 0;
+  if(eurToJpy) document.getElementById('jpyInput').value = Math.round(eur * eurToJpy);
+}
+function updateFromJpy(){
+  const jpy = parseFloat(document.getElementById('jpyInput').value) || 0;
+  if(eurToJpy) document.getElementById('eurInput').value = (jpy / eurToJpy).toFixed(2);
+}
+
+document.getElementById('eurInput').addEventListener('input', updateFromEur);
+document.getElementById('jpyInput').addEventListener('input', updateFromJpy);
+document.querySelectorAll('.quick-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.getElementById('eurInput').value = btn.dataset.amt;
+    updateFromEur();
+  });
+});
+
+(async () => {
+  await syncPull();
+  loadRate();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
