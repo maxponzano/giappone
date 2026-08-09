@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0E1728" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Emergenza — Giappone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-950:#0E1728; --indigo-900:#131F38; --indigo-800:#1C2E4E;
+    --washi:#F1ECDF; --washi-dim:#C9C2AE;
+    --vermillion:#C1440E; --vermillion-soft:#E0693A;
+    --gold:#C9A24B; --moss:#6E8C6A; --line: rgba(241,236,223,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif; color:var(--washi);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(201,162,75,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(193,68,14,0.08), transparent 55%),
+      var(--indigo-950);
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:720px; margin:0 auto; padding:36px 20px 80px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+  .nav-link{
+    display:flex; width:fit-content; align-items:center; gap:6px;
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:8px 14px; border-radius:20px; font-size:12.5px; text-decoration:none;
+    font-family:'Zen Kaku Gothic New',sans-serif; margin-bottom:18px;
+  }
+  .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .sync-status{font-size:11px; color:var(--washi-dim); margin-bottom:18px; display:flex; align-items:center; gap:6px;}
+  .sync-dot{width:7px; height:7px; border-radius:50%; background:var(--moss); display:inline-block;}
+  .sync-dot.syncing{background:var(--gold); animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--vermillion);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .eyebrow{
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--vermillion-soft); margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:"急"; font-family:'Shippori Mincho',serif; font-size:15px;}
+  h1{
+    font-family:'Shippori Mincho', serif; font-weight:700;
+    font-size: clamp(24px,5vw,32px); margin:0 0 6px; line-height:1.15;
+  }
+  .sub{color:var(--washi-dim); font-size:14px; margin:0 0 24px;}
+
+  .section{margin-bottom:28px;}
+  .section h2{font-family:'Shippori Mincho',serif; font-size:16.5px; margin:0 0 12px; font-weight:700; color:var(--gold);}
+
+  .card{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px;
+  }
+  .card-title{font-weight:700; font-size:14px; color:var(--washi); margin:0 0 6px;}
+  .card-line{font-size:12.5px; color:var(--washi-dim); margin:0 0 3px; line-height:1.5;}
+  .card-line a{color:var(--gold); text-decoration:none;}
+  .card-line a:hover{text-decoration:underline;}
+  .big-number{
+    display:flex; gap:10px; margin-bottom:10px;
+  }
+  .big-number-item{
+    flex:1; background:rgba(193,68,14,0.12); border:1px solid rgba(193,68,14,0.35);
+    border-radius:10px; padding:14px; text-align:center;
+  }
+  .big-number-item .num{font-family:'Shippori Mincho',serif; font-size:28px; font-weight:700; color:var(--vermillion-soft); display:block;}
+  .big-number-item .label{font-size:11px; color:var(--washi-dim); margin-top:2px; display:block;}
+
+  .hotel-mini{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-top:1px solid var(--line); font-size:12.5px;
+  }
+  .hotel-mini:first-child{border-top:none;}
+  .hotel-mini a{color:var(--gold); text-decoration:none; font-weight:700;}
+  .hotel-mini a:hover{text-decoration:underline;}
+  .hotel-mini-day{color:var(--washi-dim); font-size:11.5px;}
+
+  .converter{display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;}
+  .converter > div{flex:1; min-width:120px;}
+  .field-label{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--washi-dim); margin:0 0 4px; display:block;}
+  input[type=number]{
+    width:100%; background:var(--indigo-950); border:1px solid var(--line);
+    color:var(--washi); padding:9px 11px; border-radius:7px; font-size:14px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  input:focus{outline:none; border-color:var(--gold);}
+  .converter-result{
+    font-family:'Shippori Mincho',serif; font-size:20px; font-weight:700; color:var(--gold);
+    padding:9px 0;
+  }
+  .converter-note{font-size:11px; color:var(--washi-dim); margin-top:8px;}
+
+  button{
+    background:var(--vermillion); color:var(--washi); border:none; padding:10px 16px;
+    border-radius:7px; font-size:13px; font-weight:700; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  button:hover{background:var(--vermillion-soft);}
+  button.secondary{background:var(--indigo-900); border:1px solid var(--line);}
+  button.secondary:hover{border-color:var(--gold); color:var(--gold);}
+  .backup-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .backup-note{font-size:11.5px; color:var(--washi-dim); margin-top:8px; line-height:1.5;}
+  #backupStatus{font-size:11.5px; margin-top:8px; color:var(--moss); min-height:14px;}
+
+  @media (max-width: 640px){
+    .wrap{padding:22px 14px 64px;}
+    h1{font-size:24px;}
+    .big-number{flex-direction:column;}
+    .converter > div{min-width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="nav-link">← Torna all'itinerario</a>
+  <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Sincronizzato</span></div>
+
+  <p class="eyebrow">In caso di bisogno</p>
+  <h1>Emergenza</h1>
+  <p class="sub">Numeri utili, ambasciata, hotel e convertitore valuta — tutto in un posto solo.</p>
+
+  <div class="section">
+    <h2>Numeri di emergenza in Giappone</h2>
+    <div class="big-number">
+      <div class="big-number-item"><span class="num">110</span><span class="label">Polizia</span></div>
+      <div class="big-number-item"><span class="num">119</span><span class="label">Ambulanza / Vigili del fuoco</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Ambasciata e Consolato d'Italia</h2>
+    <div class="card">
+      <p class="card-title">Ambasciata d'Italia a Tokyo</p>
+      <p class="card-line">📍 2-5-4 Mita, Minato-ku, Tokyo 108-8302</p>
+      <p class="card-line">☎️ <a href="tel:+81334535291">+81 3-3453-5291</a> (orari d'ufficio)</p>
+      <p class="card-line">🆘 <a href="tel:+819039081006">+81 90-3908-1006</a> — cellulare di reperibilità SOLO per vere emergenze fuori orario</p>
+    </div>
+    <div class="card">
+      <p class="card-title">Consolato Generale d'Italia a Osaka</p>
+      <p class="card-line">📍 Nakanoshima Festival Tower 17F, 2-3-18 Nakanoshima, Kita-ku, Osaka 530-0005</p>
+      <p class="card-line">☎️ <a href="tel:+81647065820">+81 6-4706-5820</a></p>
+    </div>
+    <div class="card">
+      <p class="card-title">Unità di Crisi Farnesina (dall'Italia, per familiari)</p>
+      <p class="card-line">☎️ <a href="tel:+390636225">+39 06 36225</a></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Hotel del viaggio</h2>
+    <div class="card" id="hotelList"></div>
+  </div>
+
+  <div class="section">
+    <h2>Convertitore valuta</h2>
+    <div class="card">
+      <div class="converter">
+        <div>
+          <label class="field-label">Euro (€)</label>
+          <input type="number" id="eurInput" placeholder="0" value="10" />
+        </div>
+        <div class="converter-result" id="jpyResult">≈ ¥ —</div>
+      </div>
+      <p class="converter-note" id="rateNote">Caricamento tasso di cambio...</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Backup dati</h2>
+    <div class="card">
+      <p class="card-line" style="margin-bottom:10px;">Scarica una copia di tutti i dati dell'app (tappe, note, checklist, budget) come rete di sicurezza. Puoi ripristinarla in qualsiasi momento con "Importa backup".</p>
+      <div class="backup-row">
+        <button type="button" id="exportBtn">Scarica backup</button>
+        <button type="button" class="secondary" id="importBtnTrigger">Importa backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none;" />
+      </div>
+      <p id="backupStatus"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Sincronizzazione tra dispositivi (JSONBin.io) ---
+const SYNC_BIN_ID = "6a725047f5f4af5e29eb90dd";
+const SYNC_API_KEY = "$2a$10$vyaK6pjumhST4IJZswKO0OHDzXJVGaDpAC2ELHazrSn0gdGnuvPtm";
+const SYNC_URL = "https://api.jsonbin.io/v3/b/" + SYNC_BIN_ID;
+const _origSetItem = localStorage.setItem.bind(localStorage);
+
+function getAllLocalStorage(){
+  const obj = {};
+  for(let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    obj[k] = localStorage.getItem(k);
+  }
+  return obj;
+}
+
+function setSyncStatus(state){
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  dot.className = "sync-dot" + (state === "syncing" ? " syncing" : state === "error" ? " error" : "");
+  text.textContent = state === "syncing" ? "Sincronizzazione..." : state === "error" ? "Sincronizzazione non riuscita (offline?)" : "Sincronizzato";
+}
+
+async function syncPull(){
+  setSyncStatus("syncing");
+  try{
+    const res = await fetch(SYNC_URL + "/latest", { headers: { "X-Master-Key": SYNC_API_KEY } });
+    if(!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    const remote = data.record || {};
+    Object.keys(remote).forEach(k=>{
+      if(remote[k] !== null && remote[k] !== undefined) _origSetItem(k, remote[k]);
+    });
+    setSyncStatus("ok");
+  }catch(e){ setSyncStatus("error"); console.warn("Sync non riuscito (offline?)", e); }
+}
+
+let syncPushTimer;
+function syncPush(){
+  clearTimeout(syncPushTimer);
+  setSyncStatus("syncing");
+  syncPushTimer = setTimeout(async ()=>{
+    try{
+      await fetch(SYNC_URL, {
+        method: "PUT",
+        headers: { "Content-Type":"application/json", "X-Master-Key": SYNC_API_KEY },
+        body: JSON.stringify(getAllLocalStorage())
+      });
+      setSyncStatus("ok");
+    }catch(e){ setSyncStatus("error"); console.warn("Sync non riuscito (offline?)", e); }
+  }, 800);
+}
+
+localStorage.setItem = function(key, value){
+  _origSetItem(key, value);
+  syncPush();
+};
+
+// --- Elenco hotel (stesso set dell'itinerario) ---
+const hotelInfo = {
+  "1": {name:"The Square Hotel Ginza", address:"2-11-6 Ginza, Chuo-ku, Tokyo 104-0061", city:"Tokyo"},
+  "2": {name:"The Square Hotel Ginza", address:"2-11-6 Ginza, Chuo-ku, Tokyo 104-0061", city:"Tokyo"},
+  "3": {name:"The Square Hotel Ginza", address:"2-11-6 Ginza, Chuo-ku, Tokyo 104-0061", city:"Tokyo"},
+  "4": {name:"Ryokan Yama No Chaya", address:"171 Tonosawa, Hakone 250-0315", city:"Hakone"},
+  "5": {name:"Hotel Tou Nishinotoin Kyoto", address:"455 Nishinotoincho, Shimogyo-ku, Kyoto 600-8327", city:"Kyoto"},
+  "6": {name:"Hotel Tou Nishinotoin Kyoto", address:"455 Nishinotoincho, Shimogyo-ku, Kyoto 600-8327", city:"Kyoto"},
+  "7": {name:"Hotel Tou Nishinotoin Kyoto", address:"455 Nishinotoincho, Shimogyo-ku, Kyoto 600-8327", city:"Kyoto"},
+  "8": {name:"Hotel Intergate Osaka Umeda", address:"2-5-2 Umeda, Kita-ku, Osaka-shi 530-0001", city:"Osaka"},
+  "9": {name:"Hotel Intergate Osaka Umeda", address:"2-5-2 Umeda, Kita-ku, Osaka-shi 530-0001", city:"Osaka"},
+  "10": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima 906-0107", city:"Miyakojima"},
+  "18": {name:"Private Resort Hotel RENN", address:"422-2 Gusukubetomori, Miyakojima 906-0107", city:"Miyakojima"},
+};
+const uniqueHotels = [
+  {days:"1-3", ...hotelInfo["1"]},
+  {days:"4", ...hotelInfo["4"]},
+  {days:"5-7", ...hotelInfo["5"]},
+  {days:"8-9", ...hotelInfo["8"]},
+  {days:"10-18", ...hotelInfo["10"]},
+];
+document.getElementById('hotelList').innerHTML = uniqueHotels.map(h => `
+  <div class="hotel-mini">
+    <div>
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name + ', ' + h.address)}" target="_blank" rel="noopener">${h.name} ↗</a>
+      <div class="hotel-mini-day">${h.city} — ${h.address}</div>
+    </div>
+    <div class="hotel-mini-day">Giorni ${h.days}</div>
+  </div>
+`).join("");
+
+// --- Convertitore valuta (Frankfurter API, gratuita senza chiave) ---
+let eurToJpy = null;
+async function loadRate(){
+  try{
+    const res = await fetch("https://api.frankfurter.app/latest?from=EUR&to=JPY");
+    const data = await res.json();
+    eurToJpy = data.rates.JPY;
+    document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (aggiornato al ${data.date})`;
+    updateConversion();
+  }catch(e){
+    document.getElementById('rateNote').textContent = "Tasso di cambio non disponibile (serve connessione internet).";
+  }
+}
+function updateConversion(){
+  const eur = parseFloat(document.getElementById('eurInput').value) || 0;
+  const result = document.getElementById('jpyResult');
+  if(eurToJpy){
+    result.textContent = `≈ ¥ ${(eur * eurToJpy).toLocaleString('it-IT', {maximumFractionDigits:0})}`;
+  }
+}
+document.getElementById('eurInput').addEventListener('input', updateConversion);
+
+// --- Backup / ripristino dati ---
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = getAllLocalStorage();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "backup_giappone_" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('backupStatus').textContent = "Backup scaricato ✓";
+  setTimeout(()=>{ document.getElementById('backupStatus').textContent = ""; }, 3000);
+});
+
+document.getElementById('importBtnTrigger').addEventListener('click', ()=>{
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const data = JSON.parse(evt.target.result);
+      Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
+      document.getElementById('backupStatus').textContent = "Backup ripristinato ✓ — ricarica le altre pagine per vedere i dati aggiornati.";
+    }catch(err){
+      document.getElementById('backupStatus').textContent = "File non valido.";
+    }
+  };
+  reader.readAsText(file);
+});
+
+(async () => {
+  await syncPull();
+  loadRate();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
