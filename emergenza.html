@@ -40,6 +40,8 @@
     font-family:'Zen Kaku Gothic New',sans-serif; margin-bottom:18px;
   }
   .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .nav-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .nav-row .nav-link{margin-bottom:0;}
   .sync-status{font-size:11px; color:var(--washi-dim); margin-bottom:18px; display:flex; align-items:center; gap:6px;}
   .sync-dot{width:7px; height:7px; border-radius:50%; background:var(--moss); display:inline-block;}
   .sync-dot.syncing{background:var(--gold); animation:pulse 1s infinite;}
@@ -124,7 +126,10 @@
 </head>
 <body>
 <div class="wrap">
-  <a href="index.html" class="nav-link">← Torna all'itinerario</a>
+  <div class="nav-row">
+    <a href="index.html" class="nav-link">← Itinerario</a>
+    <a href="valuta.html" class="nav-link">💱 Cambio</a>
+  </div>
   <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Sincronizzato</span></div>
 
   <p class="eyebrow">In caso di bisogno</p>
@@ -161,20 +166,6 @@
   <div class="section">
     <h2>Hotel del viaggio</h2>
     <div class="card" id="hotelList"></div>
-  </div>
-
-  <div class="section">
-    <h2>Convertitore valuta</h2>
-    <div class="card">
-      <div class="converter">
-        <div>
-          <label class="field-label">Euro (€)</label>
-          <input type="number" id="eurInput" placeholder="0" value="10" />
-        </div>
-        <div class="converter-result" id="jpyResult">≈ ¥ —</div>
-      </div>
-      <p class="converter-note" id="rateNote">Caricamento tasso di cambio...</p>
-    </div>
   </div>
 
   <div class="section">
@@ -280,28 +271,6 @@ document.getElementById('hotelList').innerHTML = uniqueHotels.map(h => `
   </div>
 `).join("");
 
-// --- Convertitore valuta (Frankfurter API, gratuita senza chiave) ---
-let eurToJpy = null;
-async function loadRate(){
-  try{
-    const res = await fetch("https://api.frankfurter.app/latest?from=EUR&to=JPY");
-    const data = await res.json();
-    eurToJpy = data.rates.JPY;
-    document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (aggiornato al ${data.date})`;
-    updateConversion();
-  }catch(e){
-    document.getElementById('rateNote').textContent = "Tasso di cambio non disponibile (serve connessione internet).";
-  }
-}
-function updateConversion(){
-  const eur = parseFloat(document.getElementById('eurInput').value) || 0;
-  const result = document.getElementById('jpyResult');
-  if(eurToJpy){
-    result.textContent = `≈ ¥ ${(eur * eurToJpy).toLocaleString('it-IT', {maximumFractionDigits:0})}`;
-  }
-}
-document.getElementById('eurInput').addEventListener('input', updateConversion);
-
 // --- Backup / ripristino dati ---
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   const data = getAllLocalStorage();
@@ -337,7 +306,6 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
 
 (async () => {
   await syncPull();
-  loadRate();
 })();
 
 if('serviceWorker' in navigator){
