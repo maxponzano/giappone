@@ -213,6 +213,7 @@
           <option value="">—</option>
           <option value="Max">Max</option>
           <option value="Katia">Katia</option>
+          <option value="Carta comune">Carta comune</option>
         </select>
       </div>
       <div class="split-check">
@@ -408,11 +409,12 @@ function render(){
             <option value="" ${i.paidBy==="" ? "selected":""}>—</option>
             <option value="Max" ${i.paidBy==="Max" ? "selected":""}>Max</option>
             <option value="Katia" ${i.paidBy==="Katia" ? "selected":""}>Katia</option>
+            <option value="Carta comune" ${i.paidBy==="Carta comune" ? "selected":""}>Carta comune</option>
           </select>
         </div>
         <div class="split-check">
-          <input type="checkbox" data-field="split" data-id="${i.id}" data-fn="${updateFn}" ${i.split ? "checked":""} id="split_${i.id}" />
-          <label for="split_${i.id}">Da dividere</label>
+          <input type="checkbox" data-field="split" data-id="${i.id}" data-fn="${updateFn}" ${i.split ? "checked":""} ${i.paidBy==="Carta comune" ? "disabled":""} id="split_${i.id}" />
+          <label for="split_${i.id}">Da dividere${i.paidBy==="Carta comune" ? " (già in comune)" : ""}</label>
         </div>
       </div>
     </div>
@@ -429,7 +431,9 @@ function render(){
       if(field === "spesa") value = parseFloat(el.value) || 0;
       else if(field === "split") value = el.checked;
       else value = el.value;
-      fn(id, { [field]: value });
+      const patch = { [field]: value };
+      if(field === "paidBy" && value === "Carta comune") patch.split = false;
+      fn(id, patch);
     });
   });
   list.querySelectorAll('[data-remove]').forEach(btn=>{
@@ -491,12 +495,22 @@ function render(){
   }
 }
 
+document.getElementById('newPaidBy').addEventListener('change', (e)=>{
+  const splitCheckbox = document.getElementById('newSplit');
+  if(e.target.value === "Carta comune"){
+    splitCheckbox.checked = false;
+    splitCheckbox.disabled = true;
+  } else {
+    splitCheckbox.disabled = false;
+  }
+});
+
 document.getElementById('addForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const desc = document.getElementById('newDesc').value.trim();
   const spesa = parseFloat(document.getElementById('newSpesa').value) || 0;
   const paidBy = document.getElementById('newPaidBy').value;
-  const split = document.getElementById('newSplit').checked;
+  const split = paidBy === "Carta comune" ? false : document.getElementById('newSplit').checked;
   if(!desc) return;
 
   const custom = loadCustom();
@@ -507,6 +521,7 @@ document.getElementById('addForm').addEventListener('submit', (e)=>{
   document.getElementById('newSpesa').value = "";
   document.getElementById('newPaidBy').value = "";
   document.getElementById('newSplit').checked = true;
+  document.getElementById('newSplit').disabled = false;
 
   render();
 });
