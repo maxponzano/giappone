@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
 <title>Itinerario Giappone — Diario di viaggio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -53,6 +55,11 @@
     font-family:'Zen Kaku Gothic New',sans-serif;
   }
   .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .sync-status{font-size:11px; color:var(--washi-dim); margin-bottom:14px; display:flex; align-items:center; gap:6px;}
+  .sync-dot{width:7px; height:7px; border-radius:50%; background:var(--moss); display:inline-block;}
+  .sync-dot.syncing{background:var(--gold); animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--vermillion);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
   .eyebrow{
     font-size:12px; letter-spacing:.16em; text-transform:uppercase;
     color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:8px;
@@ -93,6 +100,30 @@
   .cover-photo img{
     width:100%; height:auto; display:block;
   }
+
+  .today-row{display:flex; align-items:center; gap:12px; margin-top:22px; flex-wrap:wrap;}
+  .today-btn{
+    background:var(--gold); color:var(--indigo-950); border:none; padding:9px 16px;
+    border-radius:20px; font-size:12.5px; font-weight:700; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .today-btn:hover{background:#dab863;}
+  .today-status{font-size:12px; color:var(--washi-dim);}
+  .day-block.today-highlight{
+    border-left:2px solid var(--gold); padding-left:14px; margin-left:-16px;
+  }
+
+  .weather-widget{
+    margin-top:18px; background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+  }
+  .weather-title{font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--gold); margin:0 0 10px; font-weight:700;}
+  .weather-days{display:flex; gap:14px; overflow-x:auto;}
+  .weather-day{flex:0 0 auto; text-align:center; min-width:52px;}
+  .weather-day .wd-label{font-size:10.5px; color:var(--washi-dim); margin-bottom:4px;}
+  .weather-day .wd-icon{font-size:20px; margin-bottom:2px;}
+  .weather-day .wd-temp{font-size:12px; color:var(--washi);}
+  .weather-loading{font-size:12px; color:var(--washi-dim); font-style:italic;}
 
   .map-legend{
     display:flex; gap:16px; flex-wrap:wrap; margin-top:20px; font-size:12px; color:var(--washi-dim);
@@ -293,7 +324,9 @@
     <div class="nav-row">
       <a href="checklist.html" class="nav-link">📋 Checklist</a>
       <a href="budget.html" class="nav-link">💰 Budget</a>
+      <a href="emergenza.html" class="nav-link">🆘 Emergenza</a>
     </div>
+    <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Sincronizzato</span></div>
     <p class="eyebrow">Diario di viaggio</p>
     <h1>Giappone, 10–29 settembre 2026</h1>
     <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto — con mappa di ogni singola giornata.</p>
@@ -302,6 +335,16 @@
 
   <div class="cover-photo">
     <img src="cover.jpg" alt="Max e Katia in Giappone" />
+  </div>
+
+  <div class="today-row">
+    <button type="button" id="goTodayBtn" class="today-btn">📍 Vai a oggi</button>
+    <span id="todayStatus" class="today-status"></span>
+  </div>
+
+  <div class="weather-widget" id="weatherWidget">
+    <p class="weather-title" id="weatherCity">Meteo</p>
+    <div class="weather-days" id="weatherDays"><span class="weather-loading">Caricamento meteo…</span></div>
   </div>
 
   <div class="map-legend">
@@ -344,21 +387,32 @@ function getAllLocalStorage(){
   return obj;
 }
 
+function setSyncStatus(state){
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if(!dot || !text) return;
+  dot.className = "sync-dot" + (state === "syncing" ? " syncing" : state === "error" ? " error" : "");
+  text.textContent = state === "syncing" ? "Sincronizzazione..." : state === "error" ? "Sincronizzazione non riuscita (offline?)" : "Sincronizzato";
+}
+
 async function syncPull(){
+  setSyncStatus("syncing");
   try{
     const res = await fetch(SYNC_URL + "/latest", { headers: { "X-Master-Key": SYNC_API_KEY } });
-    if(!res.ok) return;
+    if(!res.ok) throw new Error("bad response");
     const data = await res.json();
     const remote = data.record || {};
     Object.keys(remote).forEach(k=>{
       if(remote[k] !== null && remote[k] !== undefined) _origSetItem(k, remote[k]);
     });
-  }catch(e){ console.warn("Sync non riuscito (offline?)", e); }
+    setSyncStatus("ok");
+  }catch(e){ setSyncStatus("error"); console.warn("Sync non riuscito (offline?)", e); }
 }
 
 let syncPushTimer;
 function syncPush(){
   clearTimeout(syncPushTimer);
+  setSyncStatus("syncing");
   syncPushTimer = setTimeout(async ()=>{
     try{
       await fetch(SYNC_URL, {
@@ -366,7 +420,8 @@ function syncPush(){
         headers: { "Content-Type":"application/json", "X-Master-Key": SYNC_API_KEY },
         body: JSON.stringify(getAllLocalStorage())
       });
-    }catch(e){ console.warn("Sync non riuscito (offline?)", e); }
+      setSyncStatus("ok");
+    }catch(e){ setSyncStatus("error"); console.warn("Sync non riuscito (offline?)", e); }
   }, 800);
 }
 
@@ -691,7 +746,8 @@ function render(){
 
   itineraryDays.forEach(block=>{
     const div = document.createElement('div');
-    div.className = "day-block";
+    div.className = "day-block" + (block.day === getTodayDayKey() ? " today-highlight" : "");
+    div.id = "day-" + block.day;
     const fixedStops = confirmedStops.filter(s=>{
       const effectiveDay = moves[s.name] || s.attachTo;
       return effectiveDay === block.day && !hidden.includes(s.name);
@@ -1013,6 +1069,69 @@ function updateCountdown(){
   `;
 }
 
+// --- "Vai a oggi" ---
+function getTodayDayKey(){
+  const now = new Date();
+  if(now.getFullYear() === 2026 && now.getMonth() === 8){ // settembre (indice 8)
+    const dom = now.getDate();
+    if(dom >= 10 && dom <= 29) return String(dom - 10);
+  }
+  return null;
+}
+
+document.getElementById('goTodayBtn').addEventListener('click', ()=>{
+  const key = getTodayDayKey();
+  const statusEl = document.getElementById('todayStatus');
+  if(key === null){
+    statusEl.textContent = "Il viaggio non è ancora iniziato (o è già finito).";
+    setTimeout(()=>{ statusEl.textContent = ""; }, 3000);
+    return;
+  }
+  const el = document.getElementById('day-' + key);
+  if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
+});
+
+// --- Meteo (Open-Meteo, gratuito senza chiave) ---
+const weatherIcons = {
+  0:"☀️", 1:"🌤️", 2:"⛅", 3:"☁️", 45:"🌫️", 48:"🌫️",
+  51:"🌦️", 53:"🌦️", 55:"🌦️", 61:"🌧️", 63:"🌧️", 65:"🌧️",
+  71:"🌨️", 73:"🌨️", 75:"🌨️", 80:"🌦️", 81:"🌧️", 82:"⛈️",
+  95:"⛈️", 96:"⛈️", 99:"⛈️"
+};
+function iconFor(code){ return weatherIcons[code] || "🌡️"; }
+
+async function loadWeather(){
+  const todayKey = getTodayDayKey();
+  const cityBlock = itineraryDays.find(d => d.day === (todayKey || "1"));
+  const point = cityBlock ? cityBlock.stops[0] : { lat:44.4056, lng:8.9463 };
+  const cityLabel = todayKey ? cityBlock.city : "Genova (prima della partenza)";
+  document.getElementById('weatherCity').textContent = "Meteo — " + cityLabel;
+
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${point.lat}&longitude=${point.lng}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const days = data.daily.time.map((date, i)=>({
+      date, code: data.daily.weathercode[i],
+      max: Math.round(data.daily.temperature_2m_max[i]),
+      min: Math.round(data.daily.temperature_2m_min[i])
+    }));
+    const dayLabels = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+    document.getElementById('weatherDays').innerHTML = days.map(d=>{
+      const dt = new Date(d.date + "T00:00:00");
+      return `
+        <div class="weather-day">
+          <div class="wd-label">${dayLabels[dt.getDay()]}</div>
+          <div class="wd-icon">${iconFor(d.code)}</div>
+          <div class="wd-temp">${d.max}° / ${d.min}°</div>
+        </div>
+      `;
+    }).join("");
+  }catch(e){
+    document.getElementById('weatherDays').innerHTML = `<span class="weather-loading">Meteo non disponibile (serve connessione internet).</span>`;
+  }
+}
+
 (async () => {
   await syncPull();
   populateDaySelect();
@@ -1020,7 +1139,12 @@ function updateCountdown(){
   renderPending();
   updateCountdown();
   setInterval(updateCountdown, 1000);
+  loadWeather();
 })();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
