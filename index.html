@@ -123,6 +123,7 @@
   .weather-day .wd-label{font-size:10.5px; color:var(--washi-dim); margin-bottom:4px;}
   .weather-day .wd-icon{font-size:20px; margin-bottom:2px;}
   .weather-day .wd-temp{font-size:12px; color:var(--washi);}
+  .weather-day .wd-date{font-size:9.5px; color:var(--washi-dim); margin-top:2px;}
   .weather-loading{font-size:12px; color:var(--washi-dim); font-style:italic;}
 
   .tz-widget{
@@ -1314,11 +1315,14 @@ async function loadWeather(){
     const dayLabels = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
     document.getElementById('weatherDays').innerHTML = days.map(d=>{
       const dt = new Date(d.date + "T00:00:00");
+      const dd = String(dt.getDate()).padStart(2,"0");
+      const mm = String(dt.getMonth()+1).padStart(2,"0");
       return `
         <div class="weather-day">
           <div class="wd-label">${dayLabels[dt.getDay()]}</div>
           <div class="wd-icon">${iconFor(d.code)}</div>
           <div class="wd-temp">${d.max}° / ${d.min}°</div>
+          <div class="wd-date">${dd}/${mm}</div>
         </div>
       `;
     }).join("");
