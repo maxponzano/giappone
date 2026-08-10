@@ -125,6 +125,20 @@
   .weather-day .wd-temp{font-size:12px; color:var(--washi);}
   .weather-loading{font-size:12px; color:var(--washi-dim); font-style:italic;}
 
+  .tz-widget{
+    margin-top:14px; display:flex; align-items:center; justify-content:space-between;
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+  }
+  .tz-side{flex:1; text-align:center;}
+  .tz-label{font-size:11.5px; color:var(--washi-dim); margin:0 0 4px;}
+  .tz-time{font-family:'Shippori Mincho',serif; font-size:24px; font-weight:700; color:var(--gold); margin:0;}
+  .tz-date{font-size:10.5px; color:var(--washi-dim); margin:2px 0 0;}
+  .tz-diff{
+    flex:0 0 auto; font-size:11px; color:var(--vermillion-soft); padding:0 14px;
+    text-align:center; line-height:1.3;
+  }
+
   .map-legend{
     display:flex; gap:16px; flex-wrap:wrap; margin-top:20px; font-size:12px; color:var(--washi-dim);
   }
@@ -325,6 +339,8 @@
     .wrap{padding:22px 14px 64px;}
     h1{font-size:26px;}
     .sub{font-size:13.5px;}
+    .tz-time{font-size:19px;}
+    .tz-diff{padding:0 8px; font-size:10px;}
     .spine{padding-left:22px;}
     .spine::before{left:4px;}
     .node{left:-22px; width:10px; height:10px;}
@@ -384,6 +400,20 @@
     <div class="weather-widget" id="weatherWidget">
       <p class="weather-title" id="weatherCity">Meteo</p>
       <div class="weather-days" id="weatherDays"><span class="weather-loading">Caricamento meteo…</span></div>
+    </div>
+
+    <div class="tz-widget">
+      <div class="tz-side">
+        <p class="tz-label">🇮🇹 Italia</p>
+        <p class="tz-time" id="tzItaly">--:--</p>
+        <p class="tz-date" id="tzItalyDate"></p>
+      </div>
+      <div class="tz-diff" id="tzDiff">—</div>
+      <div class="tz-side">
+        <p class="tz-label">🇯🇵 Giappone</p>
+        <p class="tz-time" id="tzJapan">--:--</p>
+        <p class="tz-date" id="tzJapanDate"></p>
+      </div>
     </div>
 
     <div class="map-legend">
@@ -463,11 +493,12 @@ function syncPush(){
   setSyncStatus("syncing");
   syncPushTimer = setTimeout(async ()=>{
     try{
-      await fetch(SYNC_URL, {
+      const res = await fetch(SYNC_URL, {
         method: "PUT",
         headers: { "Content-Type":"application/json", "X-Master-Key": SYNC_API_KEY },
         body: JSON.stringify(getAllLocalStorage())
       });
+      if(!res.ok) throw new Error("push failed: " + res.status);
       setSyncStatus("ok");
     }catch(e){ setSyncStatus("error"); console.warn("Sync non riuscito (offline?)", e); }
   }, 800);
@@ -1176,6 +1207,41 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
 // --- Conto alla rovescia verso la partenza (10 settembre 2026) ---
 const DEPARTURE_DATE = new Date("2026-09-10T00:00:00");
 
+// --- Fuso orario Italia / Giappone ---
+function updateTimezones(){
+  const now = new Date();
+
+  const timeFmt = { hour:"2-digit", minute:"2-digit", hour12:false };
+  const dateFmt = { weekday:"short", day:"numeric", month:"short" };
+
+  const italyTime = now.toLocaleTimeString("it-IT", { ...timeFmt, timeZone:"Europe/Rome" });
+  const italyDate = now.toLocaleDateString("it-IT", { ...dateFmt, timeZone:"Europe/Rome" });
+  const japanTime = now.toLocaleTimeString("it-IT", { ...timeFmt, timeZone:"Asia/Tokyo" });
+  const japanDate = now.toLocaleDateString("it-IT", { ...dateFmt, timeZone:"Asia/Tokyo" });
+
+  document.getElementById('tzItaly').textContent = italyTime;
+  document.getElementById('tzItalyDate').textContent = italyDate;
+  document.getElementById('tzJapan').textContent = japanTime;
+  document.getElementById('tzJapanDate').textContent = japanDate;
+
+  // Calcola la differenza oraria reale (gestisce da sola l'ora legale)
+  const italyOffset = getUtcOffsetMinutes(now, "Europe/Rome");
+  const japanOffset = getUtcOffsetMinutes(now, "Asia/Tokyo");
+  const diffHours = (japanOffset - italyOffset) / 60;
+  document.getElementById('tzDiff').innerHTML = `Giappone<br>+${diffHours}h`;
+}
+
+function getUtcOffsetMinutes(date, timeZone){
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone, hourCycle:"h23",
+    year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit"
+  });
+  const parts = dtf.formatToParts(date).reduce((acc, p)=>{ acc[p.type] = p.value; return acc; }, {});
+  const asUTC = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  return (asUTC - date.getTime()) / 60000;
+}
+
 function updateCountdown(){
   const el = document.getElementById('countdown');
   const now = new Date();
@@ -1277,6 +1343,8 @@ async function loadWeather(){
     renderMasterMap();
     renderPending();
     loadWeather();
+    updateTimezones();
+    setInterval(updateTimezones, 1000);
   }
 })();
 
