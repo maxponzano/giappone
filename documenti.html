@@ -186,6 +186,17 @@
       <button type="submit">Aggiungi</button>
     </form>
   </div>
+
+  <div id="customSectionsContainer"></div>
+
+  <div class="section">
+    <h2>➕ Nuova sezione</h2>
+    <p class="card-line" style="margin-bottom:10px; color:var(--washi-dim); font-size:12.5px;">Crea una sezione con lo stesso tipo di campi delle altre (tratta, codice, data, orario, PDF o link Drive).</p>
+    <form class="add-form" id="newSectionForm">
+      <div><label class="field-label">Titolo sezione</label><input type="text" id="newSectionTitle" placeholder="Es. Treni Shinkansen" /></div>
+      <button type="submit">Crea sezione</button>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -454,11 +465,144 @@ function wireOpenPdf(container, category){
   });
 }
 
+// --- Sezioni documenti personalizzate (create dall'utente) ---
+const CUSTOM_SECTIONS_KEY = "doc_custom_sections";
+
+function loadCustomSections(){
+  try{ const raw = localStorage.getItem(CUSTOM_SECTIONS_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveCustomSections(list){
+  try{ localStorage.setItem(CUSTOM_SECTIONS_KEY, JSON.stringify(list)); }
+  catch(e){ console.error(e); }
+}
+
+function renderCustomSections(){
+  const container = document.getElementById('customSectionsContainer');
+  const sections = loadCustomSections();
+  container.innerHTML = sections.map(sec => `
+    <div class="section">
+      <div class="item-head" style="margin-bottom:12px;">
+        <h2 style="margin:0;">📁 ${sec.title}</h2>
+        <button type="button" class="item-remove" data-remove-section="${sec.id}" title="Elimina sezione">✕</button>
+      </div>
+      <div id="customList_${sec.id}"></div>
+      <form class="add-form" data-custom-form="${sec.id}">
+        <div><label class="field-label">Tratta / Descrizione</label><input type="text" data-field="title" placeholder="Es. Descrizione" /></div>
+        <div><label class="field-label">Codice prenotazione</label><input type="text" data-field="code" placeholder="Es. XYZ789" /></div>
+        <div><label class="field-label">Data</label><input type="date" data-field="date" /></div>
+        <div><label class="field-label">Orario partenza</label><input type="time" data-field="time" /></div>
+        <div><label class="field-label">PDF (facoltativo, max 250 KB)</label><input type="file" data-field="pdf" accept="application/pdf" /></div>
+        <div><label class="field-label">Oppure link Google Drive</label><input type="text" data-field="drive" placeholder="https://drive.google.com/..." /></div>
+        <button type="submit">Aggiungi</button>
+      </form>
+    </div>
+  `).join("");
+
+  container.querySelectorAll('[data-remove-section]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(!confirm("Eliminare questa sezione e tutti i suoi documenti?")) return;
+      const id = btn.dataset.removeSection;
+      const remaining = loadCustomSections().filter(s => s.id !== id);
+      saveCustomSections(remaining);
+      localStorage.removeItem("doc_custom_" + id);
+      syncPush();
+      renderCustomSections();
+    });
+  });
+
+  sections.forEach(sec=>{
+    renderCustomItemList(sec.id);
+    wireCustomForm(sec.id);
+  });
+}
+
+function renderCustomItemList(sectionId){
+  const key = "doc_custom_" + sectionId;
+  const list = loadList(key);
+  const el = document.getElementById("customList_" + sectionId);
+  if(!el) return;
+  el.innerHTML = list.length === 0 ? `<p class="empty">Nessun documento in questa sezione.</p>` : list.map(f => `
+    <div class="item">
+      <div class="item-head">
+        <p class="item-title">${f.title}</p>
+        <button type="button" class="item-remove" data-remove-custom="${key}" data-id="${f.id}">✕</button>
+      </div>
+      <div class="item-meta">
+        ${f.code ? `<span>🎟️ ${f.code}</span>` : ""}
+        ${f.date ? `<span>📅 ${f.date}${f.time ? " · " + f.time : ""}</span>` : ""}
+        ${f.pdfData ? `<button type="button" class="pdf-btn" data-pdf-custom="${key}" data-id="${f.id}">📎 Apri PDF</button>` : ""}
+        ${f.driveLink ? `<a class="pdf-btn" href="${f.driveLink}" target="_blank" rel="noopener">🔗 Apri su Drive</a>` : ""}
+      </div>
+    </div>
+  `).join("");
+
+  el.querySelectorAll('[data-remove-custom]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const k = btn.dataset.removeCustom;
+      const updated = loadList(k).filter(i => i.id !== btn.dataset.id);
+      saveList(k, updated);
+      renderCustomItemList(sectionId);
+    });
+  });
+  el.querySelectorAll('[data-pdf-custom]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const k = btn.dataset.pdfCustom;
+      const item = loadList(k).find(i => i.id === btn.dataset.id);
+      if(item && item.pdfData) openPdf(item.pdfData, item.pdfName || "documento.pdf");
+    });
+  });
+}
+
+function wireCustomForm(sectionId){
+  const form = document.querySelector(`[data-custom-form="${sectionId}"]`);
+  if(!form) return;
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const title = form.querySelector('[data-field="title"]').value.trim();
+    if(!title) return;
+    const fileInput = form.querySelector('[data-field="pdf"]');
+    const file = fileInput.files[0];
+    if(!checkPdfSize(file)) return;
+    const entry = {
+      id: "c_" + Date.now(),
+      title,
+      code: form.querySelector('[data-field="code"]').value.trim(),
+      date: form.querySelector('[data-field="date"]').value,
+      time: form.querySelector('[data-field="time"]').value,
+      driveLink: form.querySelector('[data-field="drive"]').value.trim()
+    };
+    if(file){
+      entry.pdfData = await readFileAsBase64(file);
+      entry.pdfName = file.name;
+    }
+    const key = "doc_custom_" + sectionId;
+    const list = loadList(key);
+    list.push(entry);
+    saveList(key, list);
+    form.reset();
+    renderCustomItemList(sectionId);
+  });
+}
+
+document.getElementById('newSectionForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const input = document.getElementById('newSectionTitle');
+  const title = input.value.trim();
+  if(!title) return;
+  const sections = loadCustomSections();
+  sections.push({ id: "sec_" + Date.now(), title });
+  saveCustomSections(sections);
+  input.value = "";
+  renderCustomSections();
+});
+
 function renderAll(){
   renderFlights();
   renderInsurance();
   renderFlixbus();
   renderProgramma();
+  renderCustomSections();
 }
 
 document.getElementById('flightsForm').addEventListener('submit', async (e)=>{
