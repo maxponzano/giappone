@@ -90,6 +90,18 @@
     font-family:'Zen Kaku Gothic New',sans-serif;
   }
   input:focus{outline:none; border-color:var(--gold);}
+  input[type=file]{
+    width:100%; background:var(--indigo-900); border:1px solid var(--line);
+    color:var(--washi-dim); padding:7px 9px; border-radius:7px; font-size:12px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .pdf-btn{
+    background:transparent; border:1px solid var(--gold); color:var(--gold);
+    padding:3px 10px; border-radius:20px; font-size:11px; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif; display:inline-flex; align-items:center; gap:4px;
+  }
+  .pdf-btn:hover{background:rgba(201,162,75,0.12);}
+  .size-note{font-size:11px; color:var(--washi-dim); margin-top:4px;}
   button{
     background:var(--vermillion); color:var(--washi); border:none; padding:9px 16px;
     border-radius:7px; font-size:13px; font-weight:700; cursor:pointer;
@@ -124,6 +136,8 @@
       <div><label class="field-label">Compagnia / tratta</label><input type="text" id="flightTitle" placeholder="Es. ITA Airways Malpensa-Haneda" /></div>
       <div><label class="field-label">Codice prenotazione</label><input type="text" id="flightCode" placeholder="Es. ABC123" /></div>
       <div><label class="field-label">Data</label><input type="date" id="flightDate" /></div>
+      <div><label class="field-label">Orario partenza</label><input type="time" id="flightTime" /></div>
+      <div><label class="field-label">PDF biglietto (facoltativo, meglio se &lt;500 KB)</label><input type="file" id="flightPdf" accept="application/pdf" /></div>
       <button type="submit">Aggiungi</button>
     </form>
   </div>
@@ -135,6 +149,7 @@
       <div><label class="field-label">Compagnia</label><input type="text" id="insTitle" placeholder="Es. Chapka Direct" /></div>
       <div><label class="field-label">Numero polizza</label><input type="text" id="insCode" placeholder="Es. POL-123456" /></div>
       <div><label class="field-label">Telefono emergenza</label><input type="text" id="insPhone" placeholder="Es. +33 1 23 45 67" /></div>
+      <div><label class="field-label">PDF polizza (facoltativo, meglio se &lt;500 KB)</label><input type="file" id="insPdf" accept="application/pdf" /></div>
       <button type="submit">Aggiungi</button>
     </form>
   </div>
@@ -146,6 +161,8 @@
       <div><label class="field-label">Tratta</label><input type="text" id="flixbusTitle" placeholder="Es. Casa → Milano Malpensa" /></div>
       <div><label class="field-label">Codice prenotazione</label><input type="text" id="flixbusCode" placeholder="Es. XYZ789" /></div>
       <div><label class="field-label">Data</label><input type="date" id="flixbusDate" /></div>
+      <div><label class="field-label">Orario partenza</label><input type="time" id="flixbusTime" /></div>
+      <div><label class="field-label">PDF biglietto (facoltativo, meglio se &lt;500 KB)</label><input type="file" id="flixbusPdf" accept="application/pdf" /></div>
       <button type="submit">Aggiungi</button>
     </form>
   </div>
@@ -220,6 +237,29 @@ function saveList(key, list){
   catch(e){ console.error(e); }
 }
 
+function readFileAsBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function openPdf(dataUrl, filename){
+  try{
+    const byteString = atob(dataUrl.split(',')[1]);
+    const bytes = new Uint8Array(byteString.length);
+    for(let i=0; i<byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+    const blob = new Blob([bytes], { type:"application/pdf" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(()=> URL.revokeObjectURL(url), 30000);
+  }catch(e){
+    console.error("Impossibile aprire il PDF:", e);
+  }
+}
+
 function renderFlights(){
   const list = loadList("doc_flights");
   const el = document.getElementById('flightsList');
@@ -231,11 +271,13 @@ function renderFlights(){
       </div>
       <div class="item-meta">
         ${f.code ? `<span>🎟️ ${f.code}</span>` : ""}
-        ${f.date ? `<span>📅 ${f.date}</span>` : ""}
+        ${f.date ? `<span>📅 ${f.date}${f.time ? " · " + f.time : ""}</span>` : ""}
+        ${f.pdfData ? `<button type="button" class="pdf-btn" data-pdf="doc_flights" data-id="${f.id}">📎 Apri PDF</button>` : ""}
       </div>
     </div>
   `).join("");
   wireRemove(el);
+  wireOpenPdf(el);
 }
 function renderInsurance(){
   const list = loadList("doc_insurance");
@@ -249,10 +291,12 @@ function renderInsurance(){
       <div class="item-meta">
         ${f.code ? `<span>📄 ${f.code}</span>` : ""}
         ${f.phone ? `<span>☎️ <a href="tel:${f.phone.replace(/\s/g,'')}" style="color:var(--gold);">${f.phone}</a></span>` : ""}
+        ${f.pdfData ? `<button type="button" class="pdf-btn" data-pdf="doc_insurance" data-id="${f.id}">📎 Apri PDF</button>` : ""}
       </div>
     </div>
   `).join("");
   wireRemove(el);
+  wireOpenPdf(el);
 }
 function renderFlixbus(){
   const list = loadList("doc_flixbus");
@@ -265,11 +309,13 @@ function renderFlixbus(){
       </div>
       <div class="item-meta">
         ${f.code ? `<span>🎟️ ${f.code}</span>` : ""}
-        ${f.date ? `<span>📅 ${f.date}</span>` : ""}
+        ${f.date ? `<span>📅 ${f.date}${f.time ? " · " + f.time : ""}</span>` : ""}
+        ${f.pdfData ? `<button type="button" class="pdf-btn" data-pdf="doc_flixbus" data-id="${f.id}">📎 Apri PDF</button>` : ""}
       </div>
     </div>
   `).join("");
   wireRemove(el);
+  wireOpenPdf(el);
 }
 
 function wireRemove(container){
@@ -283,38 +329,69 @@ function wireRemove(container){
   });
 }
 
+function wireOpenPdf(container){
+  container.querySelectorAll('[data-pdf]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.pdf;
+      const item = loadList(key).find(i => i.id === btn.dataset.id);
+      if(item && item.pdfData) openPdf(item.pdfData, item.pdfName || "documento.pdf");
+    });
+  });
+}
+
 function renderAll(){
   renderFlights();
   renderInsurance();
   renderFlixbus();
 }
 
-document.getElementById('flightsForm').addEventListener('submit', (e)=>{
+document.getElementById('flightsForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const title = document.getElementById('flightTitle').value.trim();
   if(!title) return;
+  const fileInput = document.getElementById('flightPdf');
+  const file = fileInput.files[0];
+  const entry = { id:"f_"+Date.now(), title, code:document.getElementById('flightCode').value.trim(), date:document.getElementById('flightDate').value, time:document.getElementById('flightTime').value };
+  if(file){
+    entry.pdfData = await readFileAsBase64(file);
+    entry.pdfName = file.name;
+  }
   const list = loadList("doc_flights");
-  list.push({ id:"f_"+Date.now(), title, code:document.getElementById('flightCode').value.trim(), date:document.getElementById('flightDate').value });
+  list.push(entry);
   saveList("doc_flights", list);
   e.target.reset();
   renderAll();
 });
-document.getElementById('insuranceForm').addEventListener('submit', (e)=>{
+document.getElementById('insuranceForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const title = document.getElementById('insTitle').value.trim();
   if(!title) return;
+  const fileInput = document.getElementById('insPdf');
+  const file = fileInput.files[0];
+  const entry = { id:"i_"+Date.now(), title, code:document.getElementById('insCode').value.trim(), phone:document.getElementById('insPhone').value.trim() };
+  if(file){
+    entry.pdfData = await readFileAsBase64(file);
+    entry.pdfName = file.name;
+  }
   const list = loadList("doc_insurance");
-  list.push({ id:"i_"+Date.now(), title, code:document.getElementById('insCode').value.trim(), phone:document.getElementById('insPhone').value.trim() });
+  list.push(entry);
   saveList("doc_insurance", list);
   e.target.reset();
   renderAll();
 });
-document.getElementById('flixbusForm').addEventListener('submit', (e)=>{
+document.getElementById('flixbusForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const title = document.getElementById('flixbusTitle').value.trim();
   if(!title) return;
+  const fileInput = document.getElementById('flixbusPdf');
+  const file = fileInput.files[0];
+  const entry = { id:"b_"+Date.now(), title, code:document.getElementById('flixbusCode').value.trim(), date:document.getElementById('flixbusDate').value, time:document.getElementById('flixbusTime').value };
+  if(file){
+    entry.pdfData = await readFileAsBase64(file);
+    entry.pdfName = file.name;
+  }
   const list = loadList("doc_flixbus");
-  list.push({ id:"b_"+Date.now(), title, code:document.getElementById('flixbusCode').value.trim(), date:document.getElementById('flixbusDate').value });
+  list.push(entry);
   saveList("doc_flixbus", list);
   e.target.reset();
   renderAll();
