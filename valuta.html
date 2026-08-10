@@ -107,21 +107,21 @@
   <div class="card">
     <div class="converter-row">
       <div class="converter-side">
-        <label class="field-label">Euro</label>
-        <input type="number" id="eurInput" value="10" />
+        <label class="field-label">Yen (sul cartellino)</label>
+        <input type="number" id="jpyInput" value="1000" />
       </div>
       <div class="swap-icon">→</div>
       <div class="converter-side">
-        <label class="field-label">Yen</label>
-        <input type="number" id="jpyInput" />
+        <label class="field-label">Euro</label>
+        <input type="number" id="eurInput" />
       </div>
     </div>
     <div class="quick-amounts">
-      <button type="button" class="quick-btn" data-amt="5">€5</button>
-      <button type="button" class="quick-btn" data-amt="10">€10</button>
-      <button type="button" class="quick-btn" data-amt="20">€20</button>
-      <button type="button" class="quick-btn" data-amt="50">€50</button>
-      <button type="button" class="quick-btn" data-amt="100">€100</button>
+      <button type="button" class="quick-btn" data-amt="100">¥100</button>
+      <button type="button" class="quick-btn" data-amt="500">¥500</button>
+      <button type="button" class="quick-btn" data-amt="1000">¥1.000</button>
+      <button type="button" class="quick-btn" data-amt="5000">¥5.000</button>
+      <button type="button" class="quick-btn" data-amt="10000">¥10.000</button>
     </div>
     <p class="rate-note" id="rateNote">Caricamento tasso di cambio...</p>
   </div>
@@ -173,7 +173,7 @@ async function loadRate(){
     if(!data.rates || !data.rates.JPY) throw new Error("no rate");
     eurToJpy = data.rates.JPY;
     document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (aggiornato al ${data.date})`;
-    updateFromEur();
+    updateFromJpy();
     return;
   }catch(e){
     console.warn("Fonte primaria non disponibile, provo la fonte di riserva.", e);
@@ -185,7 +185,7 @@ async function loadRate(){
     if(!data2.rates || !data2.rates.JPY) throw new Error("no rate");
     eurToJpy = data2.rates.JPY;
     document.getElementById('rateNote').textContent = `1 € ≈ ¥ ${eurToJpy.toFixed(2)} (fonte di riserva)`;
-    updateFromEur();
+    updateFromJpy();
   }catch(e){
     document.getElementById('rateNote').textContent = "Tasso di cambio non disponibile (serve connessione internet).";
   }
@@ -204,8 +204,8 @@ document.getElementById('eurInput').addEventListener('input', updateFromEur);
 document.getElementById('jpyInput').addEventListener('input', updateFromJpy);
 document.querySelectorAll('.quick-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.getElementById('eurInput').value = btn.dataset.amt;
-    updateFromEur();
+    document.getElementById('jpyInput').value = btn.dataset.amt;
+    updateFromJpy();
   });
 });
 
