@@ -140,6 +140,19 @@
     text-align:center; line-height:1.3;
   }
 
+  .temp-chart-widget{
+    margin-top:14px; background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+  }
+  #tempChartSvg{width:100%; height:180px; display:block;}
+  .temp-chart-legend{display:flex; gap:16px; margin-top:8px; font-size:11.5px; color:var(--washi-dim);}
+  .temp-chart-legend span{display:flex; align-items:center; gap:6px;}
+  .temp-dot{width:9px; height:9px; border-radius:50%; display:inline-block; background:var(--vermillion-soft);}
+  .temp-dot-dashed{
+    width:14px; height:0; border-top:2px dashed var(--vermillion-soft); border-radius:0; background:none;
+  }
+  .temp-chart-note{font-size:11px; color:var(--washi-dim); margin:8px 0 0; line-height:1.5;}
+
   .map-legend{
     display:flex; gap:16px; flex-wrap:wrap; margin-top:20px; font-size:12px; color:var(--washi-dim);
   }
@@ -417,6 +430,16 @@
       </div>
     </div>
 
+    <div class="temp-chart-widget">
+      <p class="weather-title">Temperature 10–28 settembre</p>
+      <svg id="tempChartSvg" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+      <div class="temp-chart-legend">
+        <span><span class="temp-dot" style="background:#C9A24B"></span>Reale (max)</span>
+        <span><span class="temp-dot temp-dot-dashed"></span>Percepita (max)</span>
+      </div>
+      <p class="temp-chart-note" id="tempChartNote">Caricamento previsioni…</p>
+    </div>
+
     <div class="map-legend">
       <span><span class="legend-dot" style="background:#C9A24B"></span>Pernottamento</span>
       <span><span class="legend-dot" style="background:#C1440E"></span>Tappa del giorno</span>
@@ -428,8 +451,6 @@
     </div>
 
     <div class="spine" id="spine"></div>
-
-    <div class="add-panel" id="sospesiSection" style="display:none;"></div>
 
     <div class="add-panel">
       <h2>Aggiungi una tappa</h2>
@@ -670,7 +691,6 @@ function escapeHtml(str){
 }
 const HIDDEN_KEY = "hidden_confirmed_stops";
 const MOVES_KEY = "confirmed_stop_moves";
-const UNSCHEDULED = "none"; // sentinel: tappa esclusa da ogni giorno ("in sospeso"), non cancellata
 
 function loadMoves(){
   try{ const raw = localStorage.getItem(MOVES_KEY); return raw ? JSON.parse(raw) : {}; }
@@ -685,8 +705,7 @@ function moveConfirmedStop(name, oldDay, newDay){
   const moves = loadMoves();
   moves[name] = newDay;
   saveMoves(moves);
-  if(oldDay === UNSCHEDULED){ renderSospesi(); render(); }
-  else renderDayDetail(oldDay);
+  renderDayDetail(oldDay);
 }
 function moveAutoStop(id, oldDay, newDay){
   if(oldDay === newDay) return;
@@ -694,8 +713,7 @@ function moveAutoStop(id, oldDay, newDay){
   const item = autoStops.find(s => s.id === id);
   if(item) item.itineraryKey = newDay;
   saveAutoStops(autoStops);
-  if(oldDay === UNSCHEDULED){ renderSospesi(); render(); renderMasterMap(); }
-  else renderDayDetail(oldDay);
+  renderDayDetail(oldDay);
 }
 const AUTO_KEY = "auto_stops";
 
@@ -795,81 +813,6 @@ function goToDay(dayKey){
   location.href = "index.html?day=" + dayKey;
 }
 
-function dayOptionsHtml(includeUnscheduled){
-  const opts = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
-  return includeUnscheduled ? `<option value="${UNSCHEDULED}">⏸ In sospeso (nessun giorno)</option>${opts}` : opts;
-}
-
-function renderSospesi(){
-  const container = document.getElementById('sospesiSection');
-  if(!container) return;
-  const hidden = loadHiddenConfirmed();
-  const moves = loadMoves();
-  const autoStops = loadAutoStops();
-
-  const fixedSospesi = confirmedStops.filter(s => moves[s.name] === UNSCHEDULED && !hidden.includes(s.name));
-  const autoSospesi = autoStops.filter(s => s.itineraryKey === UNSCHEDULED);
-
-  if(fixedSospesi.length === 0 && autoSospesi.length === 0){
-    container.innerHTML = "";
-    container.style.display = "none";
-    return;
-  }
-  container.style.display = "";
-
-  const dayOptions = `<option value="">Scegli un giorno…</option>${dayOptionsHtml(false)}`;
-
-  container.innerHTML = `
-    <h2>Tappe in sospeso</h2>
-    <p>Escluse da ogni giorno, non appaiono in nessuna mappa. Scegli un giorno per rimetterle in programma.</p>
-    ${fixedSospesi.map(s=>`
-      <div class="stop-card">
-        <div class="stamp">確</div>
-        <div class="stop-body">
-          <p class="stop-name">${s.name}</p>
-          <div class="stop-meta">
-            <span>📍 ${s.area}</span>
-            <span>🚶 ${s.transport}</span>
-          </div>
-          <div class="stop-move-row">
-            <label class="stop-move-label">Sposta al giorno</label>
-            <select class="stop-move-select" data-move-confirmed-sospeso="${s.name}">${dayOptions}</select>
-          </div>
-        </div>
-      </div>
-    `).join("")}
-    ${autoSospesi.map(s=>`
-      <div class="stop-card">
-        <div class="stamp">確</div>
-        <div class="stop-body">
-          <p class="stop-name">${s.name}</p>
-          <div class="stop-meta">
-            <span>📍 ${s.area}</span>
-            <span>🚶 ${s.transport}</span>
-          </div>
-          <div class="stop-move-row">
-            <label class="stop-move-label">Sposta al giorno</label>
-            <select class="stop-move-select" data-move-auto-sospeso="${s.id}">${dayOptions}</select>
-          </div>
-        </div>
-      </div>
-    `).join("")}
-  `;
-
-  container.querySelectorAll('[data-move-confirmed-sospeso]').forEach(sel=>{
-    sel.addEventListener('change', ()=>{
-      if(!sel.value) return;
-      moveConfirmedStop(sel.dataset.moveConfirmedSospeso, UNSCHEDULED, sel.value);
-    });
-  });
-  container.querySelectorAll('[data-move-auto-sospeso]').forEach(sel=>{
-    sel.addEventListener('change', ()=>{
-      if(!sel.value) return;
-      moveAutoStop(sel.dataset.moveAutoSospeso, UNSCHEDULED, sel.value);
-    });
-  });
-}
-
 function showOverview(){
   document.getElementById('overviewSection').style.display = "";
   document.getElementById('dayDetailSection').style.display = "none";
@@ -927,7 +870,7 @@ function renderDayDetail(dayKey){
     return effectiveDay === dayKey && !hidden.includes(s.name);
   });
   const myStops = autoStops.filter(s => s.itineraryKey === dayKey);
-  const dayOptions = dayOptionsHtml(true);
+  const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
 
   container.innerHTML = `
     <div class="day-block">
@@ -1073,7 +1016,7 @@ function renderMasterMap(){
       allPoints.push({ ...s, day: day.day });
     });
   });
-  autoStops.filter(s => s.itineraryKey !== UNSCHEDULED).forEach(s=>{
+  autoStops.forEach(s=>{
     allPoints.push({ name:s.name, lat:s.lat, lng:s.lng, type:"extra", day:s.itineraryKey });
   });
 
@@ -1308,7 +1251,7 @@ function updateTimezones(){
   // Calcola la differenza oraria reale (gestisce da sola l'ora legale)
   const italyOffset = getUtcOffsetMinutes(now, "Europe/Rome");
   const japanOffset = getUtcOffsetMinutes(now, "Asia/Tokyo");
-  const diffHours = (japanOffset - italyOffset) / 60;
+  const diffHours = Math.round((japanOffset - italyOffset) / 60);
   document.getElementById('tzDiff').innerHTML = `Giappone<br>+${diffHours}h`;
 }
 
@@ -1411,6 +1354,116 @@ async function loadWeather(){
   }
 }
 
+// --- Grafico temperature reali/percepite, Giorno 1-18 (10-28 settembre) ---
+async function loadTempChart(){
+  const note = document.getElementById('tempChartNote');
+  const svg = document.getElementById('tempChartSvg');
+  const tripDays = itineraryDays.filter(d => parseInt(d.day,10) >= 1 && parseInt(d.day,10) <= 18);
+
+  // Raggruppa i giorni per coordinate uniche, per ridurre le chiamate al servizio meteo
+  const uniquePoints = [];
+  tripDays.forEach(d=>{
+    const p = d.stops[0];
+    if(!uniquePoints.some(u => u.lat === p.lat && u.lng === p.lng)){
+      uniquePoints.push({ lat:p.lat, lng:p.lng });
+    }
+  });
+
+  const forecastByPoint = {};
+  try{
+    await Promise.all(uniquePoints.map(async p=>{
+      const key = p.lat + "," + p.lng;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lng}&daily=temperature_2m_max,apparent_temperature_max&timezone=Asia%2FTokyo&forecast_days=16`;
+      const res = await fetch(url);
+      const data = await res.json();
+      forecastByPoint[key] = {};
+      data.daily.time.forEach((date, i)=>{
+        forecastByPoint[key][date] = {
+          real: data.daily.temperature_2m_max[i],
+          feels: data.daily.apparent_temperature_max[i]
+        };
+      });
+    }));
+  }catch(e){
+    note.textContent = "Previsioni non disponibili (serve connessione internet).";
+    return;
+  }
+
+  const points = tripDays.map(d=>{
+    const p = d.stops[0];
+    const key = p.lat + "," + p.lng;
+    const isoDate = `2026-09-${String(10 + parseInt(d.day,10)).padStart(2,"0")}`;
+    const found = forecastByPoint[key] ? forecastByPoint[key][isoDate] : null;
+    return { day:d.day, city:d.city, date:d.date, real: found ? found.real : null, feels: found ? found.feels : null };
+  });
+
+  const availableCount = points.filter(p => p.real !== null).length;
+
+  // --- Disegno SVG ---
+  const W = 640, H = 220, padL = 34, padR = 12, padT = 14, padB = 26;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+
+  const allTemps = points.flatMap(p => [p.real, p.feels]).filter(v => v !== null);
+  if(allTemps.length === 0){
+    svg.innerHTML = "";
+    note.textContent = "Nessuna previsione ancora disponibile per queste date. Le previsioni meteo coprono in genere solo i prossimi 16 giorni: torna a controllare più vicino alla partenza.";
+    return;
+  }
+  const minT = Math.floor(Math.min(...allTemps) - 2);
+  const maxT = Math.ceil(Math.max(...allTemps) + 2);
+
+  const xFor = (i) => padL + (i / (points.length - 1)) * chartW;
+  const yFor = (t) => padT + chartH - ((t - minT) / (maxT - minT)) * chartH;
+
+  function buildPath(field){
+    let path = "";
+    let drawing = false;
+    points.forEach((p, i)=>{
+      if(p[field] === null){ drawing = false; return; }
+      const x = xFor(i), y = yFor(p[field]);
+      path += (drawing ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      drawing = true;
+    });
+    return path.trim();
+  }
+
+  // Griglia orizzontale leggera
+  let gridLines = "";
+  const gridStep = Math.ceil((maxT - minT) / 4 / 5) * 5 || 5;
+  for(let t = Math.ceil(minT/gridStep)*gridStep; t <= maxT; t += gridStep){
+    const y = yFor(t);
+    gridLines += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="rgba(241,236,223,0.08)" stroke-width="1"/>`;
+    gridLines += `<text x="${padL-6}" y="${y+3}" font-size="9" fill="#C9C2AE" text-anchor="end">${t}°</text>`;
+  }
+
+  // Etichette asse X: mostra ogni giorno, ruotate leggermente per stare nello spazio
+  let xLabels = "";
+  points.forEach((p, i)=>{
+    const x = xFor(i);
+    xLabels += `<text x="${x}" y="${H-8}" font-size="8.5" fill="#C9C2AE" text-anchor="middle">${p.day}</text>`;
+    if(p.real === null){
+      xLabels += `<circle cx="${x}" cy="${padT + chartH/2}" r="1.5" fill="none"/>`;
+    }
+  });
+
+  const realPath = buildPath("real");
+  const feelsPath = buildPath("feels");
+
+  svg.innerHTML = `
+    ${gridLines}
+    ${xLabels}
+    <path d="${realPath}" fill="none" stroke="#C9A24B" stroke-width="2.5" />
+    <path d="${feelsPath}" fill="none" stroke="#E0693A" stroke-width="2" stroke-dasharray="5 4" />
+    ${points.map((p,i)=> p.real !== null ? `<circle cx="${xFor(i)}" cy="${yFor(p.real)}" r="2.5" fill="#C9A24B" />` : "").join("")}
+  `;
+
+  if(availableCount < points.length){
+    note.textContent = `Previsioni disponibili per ${availableCount} di ${points.length} giorni — le date più lontane (oltre ~16 giorni) compariranno mano a mano che vi avvicinate alla partenza.`;
+  } else {
+    note.textContent = "Previsioni disponibili per l'intero periodo del viaggio.";
+  }
+}
+
 (async () => {
   await syncPull();
   populateDaySelect();
@@ -1426,8 +1479,8 @@ async function loadWeather(){
     render();
     renderMasterMap();
     renderPending();
-    renderSospesi();
     loadWeather();
+    loadTempChart();
     updateTimezones();
     setInterval(updateTimezones, 1000);
   }
