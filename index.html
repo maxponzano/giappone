@@ -429,6 +429,8 @@
 
     <div class="spine" id="spine"></div>
 
+    <div class="add-panel" id="sospesiSection" style="display:none;"></div>
+
     <div class="add-panel">
       <h2>Aggiungi una tappa</h2>
       <p>Scrivi il nome del posto: l'app lo cerca da sola e calcola il giorno più vicino. Se preferisci scegliere tu il giorno, selezionalo dal menu. Funziona anche dal telefono, ovunque siate — non serve la chat.</p>
@@ -668,6 +670,7 @@ function escapeHtml(str){
 }
 const HIDDEN_KEY = "hidden_confirmed_stops";
 const MOVES_KEY = "confirmed_stop_moves";
+const UNSCHEDULED = "none"; // sentinel: tappa esclusa da ogni giorno ("in sospeso"), non cancellata
 
 function loadMoves(){
   try{ const raw = localStorage.getItem(MOVES_KEY); return raw ? JSON.parse(raw) : {}; }
@@ -682,7 +685,8 @@ function moveConfirmedStop(name, oldDay, newDay){
   const moves = loadMoves();
   moves[name] = newDay;
   saveMoves(moves);
-  renderDayDetail(oldDay);
+  if(oldDay === UNSCHEDULED){ renderSospesi(); render(); }
+  else renderDayDetail(oldDay);
 }
 function moveAutoStop(id, oldDay, newDay){
   if(oldDay === newDay) return;
@@ -690,7 +694,8 @@ function moveAutoStop(id, oldDay, newDay){
   const item = autoStops.find(s => s.id === id);
   if(item) item.itineraryKey = newDay;
   saveAutoStops(autoStops);
-  renderDayDetail(oldDay);
+  if(oldDay === UNSCHEDULED){ renderSospesi(); render(); renderMasterMap(); }
+  else renderDayDetail(oldDay);
 }
 const AUTO_KEY = "auto_stops";
 
@@ -790,6 +795,81 @@ function goToDay(dayKey){
   location.href = "index.html?day=" + dayKey;
 }
 
+function dayOptionsHtml(includeUnscheduled){
+  const opts = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
+  return includeUnscheduled ? `<option value="${UNSCHEDULED}">⏸ In sospeso (nessun giorno)</option>${opts}` : opts;
+}
+
+function renderSospesi(){
+  const container = document.getElementById('sospesiSection');
+  if(!container) return;
+  const hidden = loadHiddenConfirmed();
+  const moves = loadMoves();
+  const autoStops = loadAutoStops();
+
+  const fixedSospesi = confirmedStops.filter(s => moves[s.name] === UNSCHEDULED && !hidden.includes(s.name));
+  const autoSospesi = autoStops.filter(s => s.itineraryKey === UNSCHEDULED);
+
+  if(fixedSospesi.length === 0 && autoSospesi.length === 0){
+    container.innerHTML = "";
+    container.style.display = "none";
+    return;
+  }
+  container.style.display = "";
+
+  const dayOptions = `<option value="">Scegli un giorno…</option>${dayOptionsHtml(false)}`;
+
+  container.innerHTML = `
+    <h2>Tappe in sospeso</h2>
+    <p>Escluse da ogni giorno, non appaiono in nessuna mappa. Scegli un giorno per rimetterle in programma.</p>
+    ${fixedSospesi.map(s=>`
+      <div class="stop-card">
+        <div class="stamp">確</div>
+        <div class="stop-body">
+          <p class="stop-name">${s.name}</p>
+          <div class="stop-meta">
+            <span>📍 ${s.area}</span>
+            <span>🚶 ${s.transport}</span>
+          </div>
+          <div class="stop-move-row">
+            <label class="stop-move-label">Sposta al giorno</label>
+            <select class="stop-move-select" data-move-confirmed-sospeso="${s.name}">${dayOptions}</select>
+          </div>
+        </div>
+      </div>
+    `).join("")}
+    ${autoSospesi.map(s=>`
+      <div class="stop-card">
+        <div class="stamp">確</div>
+        <div class="stop-body">
+          <p class="stop-name">${s.name}</p>
+          <div class="stop-meta">
+            <span>📍 ${s.area}</span>
+            <span>🚶 ${s.transport}</span>
+          </div>
+          <div class="stop-move-row">
+            <label class="stop-move-label">Sposta al giorno</label>
+            <select class="stop-move-select" data-move-auto-sospeso="${s.id}">${dayOptions}</select>
+          </div>
+        </div>
+      </div>
+    `).join("")}
+  `;
+
+  container.querySelectorAll('[data-move-confirmed-sospeso]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      if(!sel.value) return;
+      moveConfirmedStop(sel.dataset.moveConfirmedSospeso, UNSCHEDULED, sel.value);
+    });
+  });
+  container.querySelectorAll('[data-move-auto-sospeso]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      if(!sel.value) return;
+      moveAutoStop(sel.dataset.moveAutoSospeso, UNSCHEDULED, sel.value);
+    });
+  });
+}
+
 function showOverview(){
   document.getElementById('overviewSection').style.display = "";
   document.getElementById('dayDetailSection').style.display = "none";
@@ -847,7 +927,7 @@ function renderDayDetail(dayKey){
     return effectiveDay === dayKey && !hidden.includes(s.name);
   });
   const myStops = autoStops.filter(s => s.itineraryKey === dayKey);
-  const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
+  const dayOptions = dayOptionsHtml(true);
 
   container.innerHTML = `
     <div class="day-block">
@@ -993,7 +1073,7 @@ function renderMasterMap(){
       allPoints.push({ ...s, day: day.day });
     });
   });
-  autoStops.forEach(s=>{
+  autoStops.filter(s => s.itineraryKey !== UNSCHEDULED).forEach(s=>{
     allPoints.push({ name:s.name, lat:s.lat, lng:s.lng, type:"extra", day:s.itineraryKey });
   });
 
@@ -1346,6 +1426,7 @@ async function loadWeather(){
     render();
     renderMasterMap();
     renderPending();
+    renderSospesi();
     loadWeather();
     updateTimezones();
     setInterval(updateTimezones, 1000);
