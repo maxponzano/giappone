@@ -80,7 +80,7 @@
   .countdown-unit{
     background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
     border:1px solid var(--line); border-radius:10px;
-    padding:10px 16px; text-align:center; min-width:0; flex:1 1 0;
+    padding:10px 16px; text-align:center; min-width:0; flex:0.75 1 0;
   }
   .countdown-num{
     font-family:'Shippori Mincho',serif; font-weight:700; font-size:24px;
@@ -130,18 +130,24 @@
   .weather-loading{font-size:12px; color:var(--washi-dim); font-style:italic;}
 
   .tz-compact{
-    flex:1.4 1 0; min-width:0; display:flex; flex-direction:column;
-    justify-content:center; align-items:center; gap:3px;
+    flex:2.6 1 0; min-width:0; display:flex; flex-direction:column;
+    align-items:stretch; justify-content:center; gap:2px;
     background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
-    border:1px solid var(--line); border-radius:10px; padding:9px 13px;
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px;
   }
-  .tz-compact-row{
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    font-family:'Shippori Mincho',serif; font-weight:700; font-size:15px; color:var(--gold);
-    white-space:nowrap;
+  .tz-compact-cols{display:flex; gap:6px;}
+  .tz-compact-col{flex:1 1 0; min-width:0; text-align:center;}
+  .tz-compact-label{
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    font-size:10.5px; color:var(--washi-dim);
+    margin:0 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .tz-compact-flag{font-size:13px;}
-  .tz-compact-diff{font-size:10px; color:var(--vermillion-soft); margin:1px 0 0; text-align:center; white-space:nowrap;}
+  .tz-compact-flag{font-size:12px; flex:0 0 auto;}
+  .tz-compact-time{
+    font-family:'Shippori Mincho',serif; font-weight:700; font-size:18px; color:var(--gold);
+    margin:0; white-space:nowrap; display:block;
+  }
+  .tz-compact-diff{font-size:10px; color:var(--vermillion-soft); white-space:nowrap; text-align:center; margin:1px 0 0;}
 
   .temp-chart-widget{
     margin-top:14px; background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
@@ -395,9 +401,12 @@
     h1{font-size:26px;}
     .sub{font-size:13.5px;}
     .header-top-row{gap:7px;}
-    .tz-compact{padding:6px 9px; gap:2px;}
-    .tz-compact-row{font-size:12.5px; gap:4px;}
-    .tz-compact-diff{font-size:9px;}
+    .tz-compact{padding:6px 6px; gap:3px;}
+    .tz-compact-cols{gap:4px;}
+    .tz-compact-label{font-size:8px; gap:2px;}
+    .tz-compact-flag{font-size:10px;}
+    .tz-compact-time{font-size:14px;}
+    .tz-compact-diff{font-size:8.5px;}
     .spine{padding-left:22px;}
     .spine::before{left:4px;}
     .node{left:-22px; width:10px; height:10px;}
@@ -442,8 +451,16 @@
     <p class="sub">Itinerario fisso Evaneos + tappe aggiunte da voi, inserite nel giorno più adatto — con mappa di ogni singola giornata.</p>
     <div class="header-top-row">
       <div class="tz-compact">
-        <div class="tz-compact-row"><span class="tz-compact-flag">🇮🇹</span><span id="tzItaly">--:--</span></div>
-        <div class="tz-compact-row"><span class="tz-compact-flag">🇯🇵</span><span id="tzJapan">--:--</span></div>
+        <div class="tz-compact-cols">
+          <div class="tz-compact-col">
+            <p class="tz-compact-label"><span class="tz-compact-flag">🇮🇹</span>Italia</p>
+            <p class="tz-compact-time" id="tzItaly">--:--</p>
+          </div>
+          <div class="tz-compact-col">
+            <p class="tz-compact-label"><span class="tz-compact-flag">🇯🇵</span>Giappone</p>
+            <p class="tz-compact-time" id="tzJapan">--:--</p>
+          </div>
+        </div>
         <p class="tz-compact-diff" id="tzDiff">—</p>
       </div>
       <div class="countdown" id="countdown"></div>
