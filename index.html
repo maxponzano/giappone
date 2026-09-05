@@ -241,6 +241,16 @@
     font-family:'Zen Kaku Gothic New',sans-serif;
   }
   .stop-remove:hover{border-color:var(--vermillion); color:var(--vermillion-soft);}
+  .stop-hold{
+    flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+    background:transparent; border:1px solid var(--line); color:var(--washi-dim);
+    font-size:12px; line-height:1; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; padding:0;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .stop-hold:hover{border-color:var(--gold); color:var(--gold);}
+  .stop-card > .stop-hold{margin-left:auto;}
+  .stop-card > .stop-hold + .stop-remove{margin-left:6px;}
   .stamp{
     flex:0 0 auto; width:34px; height:34px; border-radius:50%;
     border:1.5px solid var(--vermillion); color:var(--vermillion-soft);
@@ -348,6 +358,34 @@
   .status-msg.ok{color:var(--moss);}
   .status-msg.err{color:var(--vermillion-soft);}
 
+  .onhold-panel{
+    margin-top:18px; background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid rgba(201,162,75,0.35); border-radius:10px; padding:16px 18px;
+  }
+  .onhold-head h2{
+    font-family:'Shippori Mincho',serif; font-size:16px; margin:0 0 6px; font-weight:700;
+    color:var(--gold); display:flex; align-items:center; gap:8px;
+  }
+  .onhold-count{font-size:12.5px; color:var(--washi-dim); font-weight:400;}
+  .onhold-head p{font-size:12.5px; color:var(--washi-dim); margin:0 0 14px; line-height:1.5; max-width:58ch;}
+  .onhold-card{flex-wrap:wrap;}
+  .onhold-origin{font-size:11.5px; color:var(--vermillion-soft); margin:0 0 6px;}
+  .onhold-suggest-btn{
+    background:transparent; border:1px solid var(--gold); color:var(--gold);
+    padding:5px 10px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif; white-space:nowrap;
+  }
+  .onhold-suggest-btn:hover{background:rgba(201,162,75,0.12);}
+  .onhold-suggest-status{font-size:11.5px; color:var(--washi-dim); margin:8px 0 0; min-height:14px;}
+  .onhold-suggest-status.ok{color:var(--moss);}
+  .onhold-suggest-status.err{color:var(--vermillion-soft);}
+  .onhold-confirm-btn{
+    background:var(--gold); color:var(--indigo-950); border:none; padding:4px 10px;
+    border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; margin-left:6px;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .onhold-confirm-btn:hover{background:var(--vermillion-soft); color:var(--washi);}
+
   /* --- Ottimizzazione smartphone --- */
   @media (max-width: 640px){
     .wrap{padding:22px 14px 64px;}
@@ -409,6 +447,14 @@
     <div class="today-row">
       <button type="button" id="goTodayBtn" class="today-btn">📍 Vai a oggi</button>
       <span id="todayStatus" class="today-status"></span>
+    </div>
+
+    <div class="onhold-panel" id="onholdPanel">
+      <div class="onhold-head">
+        <h2>⏸ In sospeso <span class="onhold-count" id="onholdCount"></span></h2>
+        <p>Tappe rimandate perché il giorno era troppo pieno. Riprogrammale scegliendo un giorno dal menu, oppure chiedi il giorno migliore in base alla vicinanza geografica alle altre tappe già in programma.</p>
+      </div>
+      <div id="onholdList"></div>
     </div>
 
     <div class="weather-widget" id="weatherWidget">
@@ -803,6 +849,194 @@ function removeAutoStop(id, day){
   renderDayDetail(day);
 }
 
+// --- Basket "In sospeso": tappe rimandate perché il giorno era troppo pieno ---
+const ONHOLD_KEY = "on_hold_stops";
+
+function loadOnHold(){
+  try{ const raw = localStorage.getItem(ONHOLD_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+function saveOnHold(list){
+  try{ localStorage.setItem(ONHOLD_KEY, JSON.stringify(list)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
+}
+function makeOnHoldId(){
+  return "hold_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+}
+
+function holdConfirmedStop(name, day){
+  const stop = confirmedStops.find(s => s.name === name);
+  if(!stop) return;
+  const hidden = loadHiddenConfirmed();
+  if(!hidden.includes(name)) hidden.push(name);
+  saveHiddenConfirmed(hidden);
+  const block = itineraryDays.find(d => d.day === day);
+  const list = loadOnHold();
+  list.push({
+    id: makeOnHoldId(),
+    kind: "confirmed",
+    name: stop.name,
+    area: stop.area,
+    when: stop.when,
+    transport: stop.transport,
+    fromDay: day,
+    fromCity: block ? block.city : ""
+  });
+  saveOnHold(list);
+  renderDayDetail(day);
+}
+
+function holdAutoStop(id, day){
+  const autoStops = loadAutoStops();
+  const idx = autoStops.findIndex(s => s.id === id);
+  if(idx === -1) return;
+  const stop = autoStops[idx];
+  autoStops.splice(idx, 1);
+  saveAutoStops(autoStops);
+  const block = itineraryDays.find(d => d.day === day);
+  const list = loadOnHold();
+  list.push({
+    id: makeOnHoldId(),
+    kind: "auto",
+    name: stop.name,
+    lat: stop.lat,
+    lng: stop.lng,
+    area: stop.area,
+    transport: stop.transport,
+    fromDay: day,
+    fromCity: block ? block.city : ""
+  });
+  saveOnHold(list);
+  renderDayDetail(day);
+}
+
+function restoreOnHoldStop(id, targetDay){
+  if(!targetDay) return;
+  const list = loadOnHold();
+  const idx = list.findIndex(x => x.id === id);
+  if(idx === -1) return;
+  const item = list[idx];
+
+  if(item.kind === "confirmed"){
+    const hidden = loadHiddenConfirmed().filter(n => n !== item.name);
+    saveHiddenConfirmed(hidden);
+    const moves = loadMoves();
+    moves[item.name] = targetDay;
+    saveMoves(moves);
+  } else if(item.kind === "auto"){
+    const autoStops = loadAutoStops();
+    autoStops.push({
+      id: "auto_" + Date.now(),
+      name: item.name,
+      lat: item.lat,
+      lng: item.lng,
+      itineraryKey: targetDay,
+      area: item.area,
+      transport: item.transport
+    });
+    saveAutoStops(autoStops);
+  }
+
+  list.splice(idx, 1);
+  saveOnHold(list);
+  renderOnHold();
+  render();
+  renderMasterMap();
+}
+
+function discardOnHold(id){
+  const list = loadOnHold().filter(x => x.id !== id);
+  saveOnHold(list);
+  renderOnHold();
+}
+
+async function suggestDayForOnHold(id){
+  const list = loadOnHold();
+  const item = list.find(x => x.id === id);
+  if(!item) return;
+  const statusEl = document.querySelector(`[data-suggest-status="${id}"]`);
+  const setSt = (msg, kind) => {
+    if(!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = "onhold-suggest-status" + (kind ? " " + kind : "");
+  };
+  setSt("Cerco il giorno migliore...", "");
+  try{
+    let lat = item.lat, lng = item.lng;
+    if(lat == null || lng == null){
+      const coords = await geocodePlace(item.name);
+      if(!coords) throw new Error("not-found");
+      lat = coords.lat; lng = coords.lng;
+      item.lat = lat; item.lng = lng;
+      saveOnHold(list);
+    }
+    const nearest = findNearestDay(lat, lng);
+    if(!nearest){ setSt("Non riesco a calcolare un suggerimento — riprogramma manualmente.", "err"); return; }
+    const dayBlock = itineraryDays.find(d => d.day === nearest.day);
+    setSt(`Suggerito: Giorno ${nearest.day} — ${dayBlock ? dayBlock.city : ""} (vicino a ${nearest.nearName}, ~${nearest.dist.toFixed(1)} km).`, "ok");
+    if(statusEl){
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = "button";
+      confirmBtn.className = "onhold-confirm-btn";
+      confirmBtn.textContent = "Sposta qui";
+      confirmBtn.addEventListener('click', ()=> restoreOnHoldStop(id, nearest.day));
+      statusEl.appendChild(confirmBtn);
+    }
+  }catch(e){
+    setSt("Posizione non trovata — riprogramma manualmente dal menu.", "err");
+  }
+}
+
+function renderOnHold(){
+  const listEl = document.getElementById('onholdList');
+  const countEl = document.getElementById('onholdCount');
+  if(!listEl) return;
+  const list = loadOnHold();
+  if(countEl) countEl.textContent = list.length ? `(${list.length})` : "";
+
+  if(list.length === 0){
+    listEl.innerHTML = `<p class="empty">Nessuna tappa in sospeso al momento. Dal dettaglio di un giorno puoi spostarne una qui con il pulsante ⏸, se quel giorno risulta troppo pieno.</p>`;
+    return;
+  }
+
+  const dayOptions = `<option value="">Scegli un giorno…</option>` +
+    itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
+
+  listEl.innerHTML = list.map(item => `
+    <div class="stop-card onhold-card" data-onhold-id="${item.id}">
+      <div class="stamp">⏸</div>
+      <div class="stop-body">
+        <p class="stop-name">${item.name}</p>
+        <p class="onhold-origin">Rimandata dal Giorno ${item.fromDay}${item.fromCity ? " — " + item.fromCity : ""}</p>
+        <div class="stop-meta">
+          ${item.area ? `<span>📍 ${item.area}</span>` : ""}
+          ${item.when ? `<span>🕒 ${item.when}</span>` : ""}
+          ${item.transport ? `<span>🚶 ${item.transport}</span>` : ""}
+        </div>
+        <div class="stop-move-row">
+          <label class="stop-move-label">Riprogramma al giorno</label>
+          <select class="stop-move-select" data-restore-onhold="${item.id}">${dayOptions}</select>
+          <button type="button" class="onhold-suggest-btn" data-suggest-onhold="${item.id}">🧭 Giorno migliore</button>
+        </div>
+        <p class="onhold-suggest-status" data-suggest-status="${item.id}"></p>
+      </div>
+      <button type="button" class="stop-remove" data-discard-onhold="${item.id}" title="Elimina definitivamente">✕</button>
+    </div>
+  `).join("");
+
+  listEl.querySelectorAll('[data-restore-onhold]').forEach(sel=>{
+    sel.addEventListener('change', ()=> restoreOnHoldStop(sel.dataset.restoreOnhold, sel.value));
+  });
+  listEl.querySelectorAll('[data-suggest-onhold]').forEach(btn=>{
+    btn.addEventListener('click', ()=> suggestDayForOnHold(btn.dataset.suggestOnhold));
+  });
+  listEl.querySelectorAll('[data-discard-onhold]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(confirm("Eliminare definitivamente questa tappa dalla lista in sospeso?")) discardOnHold(btn.dataset.discardOnhold);
+    });
+  });
+}
+
 function getUrlDay(){
   const params = new URLSearchParams(location.search);
   const d = params.get('day');
@@ -919,6 +1153,7 @@ function renderDayDetail(dayKey){
               <select class="stop-move-select" data-move-confirmed="${s.name}" data-day="${block.day}">${dayOptions}</select>
             </div>
           </div>
+          <button type="button" class="stop-hold" data-hold-confirmed="${s.name}" data-day="${block.day}" title="Sposta in sospeso">⏸</button>
           <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
@@ -936,6 +1171,7 @@ function renderDayDetail(dayKey){
               <select class="stop-move-select" data-move-auto="${s.id}" data-day="${block.day}">${dayOptions}</select>
             </div>
           </div>
+          <button type="button" class="stop-hold" data-hold-auto="${s.id}" data-day="${block.day}" title="Sposta in sospeso">⏸</button>
           <button type="button" class="stop-remove" data-remove-auto="${s.id}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
@@ -947,6 +1183,12 @@ function renderDayDetail(dayKey){
   });
   container.querySelectorAll('[data-remove-auto]').forEach(btn=>{
     btn.addEventListener('click', ()=> removeAutoStop(btn.dataset.removeAuto, btn.dataset.day));
+  });
+  container.querySelectorAll('[data-hold-confirmed]').forEach(btn=>{
+    btn.addEventListener('click', ()=> holdConfirmedStop(btn.dataset.holdConfirmed, btn.dataset.day));
+  });
+  container.querySelectorAll('[data-hold-auto]').forEach(btn=>{
+    btn.addEventListener('click', ()=> holdAutoStop(btn.dataset.holdAuto, btn.dataset.day));
   });
   container.querySelectorAll('[data-move-confirmed]').forEach(sel=>{
     sel.value = sel.dataset.day;
@@ -1478,6 +1720,7 @@ async function loadTempChart(){
     showOverview();
     render();
     renderMasterMap();
+    renderOnHold();
     renderPending();
     loadWeather();
     loadTempChart();
