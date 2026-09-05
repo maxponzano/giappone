@@ -260,6 +260,18 @@
   .stop-hold:hover{border-color:var(--gold); color:var(--gold);}
   .stop-card > .stop-hold{margin-left:auto;}
   .stop-card > .stop-hold + .stop-remove{margin-left:6px;}
+  .stop-actions{flex:0 0 auto; margin-left:auto; display:flex; flex-direction:column; gap:6px; align-items:flex-end;}
+  .stop-actions-row{display:flex; gap:6px;}
+  .stop-order-btn{
+    flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+    background:transparent; border:1px solid var(--line); color:var(--washi-dim);
+    font-size:11px; line-height:1; cursor:pointer; display:flex;
+    align-items:center; justify-content:center; padding:0;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .stop-order-btn:hover{border-color:var(--gold); color:var(--gold);}
+  .stop-order-btn:disabled{opacity:.3; cursor:default;}
+  .stop-order-btn:disabled:hover{border-color:var(--line); color:var(--washi-dim);}
   .stamp{
     flex:0 0 auto; width:34px; height:34px; border-radius:50%;
     border:1.5px solid var(--vermillion); color:var(--vermillion-soft);
@@ -332,6 +344,13 @@
   .plane-icon{
     font-size:18px; display:flex; align-items:center; justify-content:center;
     filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  }
+  .numbered-pin{
+    display:flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:50%;
+    background:#C1440E; color:#F1ECDF; border:2px solid #0E1728;
+    font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; font-size:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.45);
   }
 
   .add-panel{
@@ -777,6 +796,39 @@ function moveAutoStop(id, oldDay, newDay){
 }
 const AUTO_KEY = "auto_stops";
 
+// --- Ordine delle tappe aggiunte, per giorno: stessa numerazione su lista e mappa ---
+const AUTO_ORDER_KEY = "auto_stop_order";
+
+function loadAutoOrder(){
+  try{ const raw = localStorage.getItem(AUTO_ORDER_KEY); return raw ? JSON.parse(raw) : {}; }
+  catch(e){ return {}; }
+}
+function saveAutoOrder(obj){
+  try{ localStorage.setItem(AUTO_ORDER_KEY, JSON.stringify(obj)); }
+  catch(e){ console.error("Impossibile salvare:", e); }
+}
+// Le tappe già ordinate a mano mantengono la posizione scelta; quelle nuove (mai
+// riordinate per questo giorno) finiscono in coda, nell'ordine in cui sono state aggiunte.
+function orderedAutoStopsForDay(dayKey){
+  const stops = loadAutoStops().filter(s => s.itineraryKey === dayKey);
+  const order = loadAutoOrder()[dayKey] || [];
+  const byId = new Map(stops.map(s => [s.id, s]));
+  const ordered = order.map(id => byId.get(id)).filter(Boolean);
+  const remaining = stops.filter(s => !order.includes(s.id));
+  return [...ordered, ...remaining];
+}
+function moveAutoStopOrder(dayKey, id, direction){
+  const stops = orderedAutoStopsForDay(dayKey);
+  const idx = stops.findIndex(s => s.id === id);
+  const swapWith = idx + direction;
+  if(idx === -1 || swapWith < 0 || swapWith >= stops.length) return;
+  [stops[idx], stops[swapWith]] = [stops[swapWith], stops[idx]];
+  const orderMap = loadAutoOrder();
+  orderMap[dayKey] = stops.map(s => s.id);
+  saveAutoOrder(orderMap);
+  renderDayDetail(dayKey);
+}
+
 let dayMaps = {}; // day -> leaflet map instance (inizializzata pigramente)
 
 function colorFor(type){
@@ -785,8 +837,8 @@ function colorFor(type){
 }
 
 function drawDayMap(container, day){
-  const autoStops = loadAutoStops().filter(s => s.itineraryKey === day.day);
-  const allStops = [...day.stops, ...autoStops.map(s=>({name:s.name, lat:s.lat, lng:s.lng, type:"extra"}))];
+  const autoStops = orderedAutoStopsForDay(day.day);
+  const allStops = [...day.stops, ...autoStops.map((s, idx)=>({name:s.name, lat:s.lat, lng:s.lng, type:"extra", num: idx + 1}))];
   if(allStops.length === 0) return;
 
   const map = L.map(container, { scrollWheelZoom:false, zoomControl:true, dragging:true });
@@ -810,6 +862,10 @@ function drawDayMap(container, day){
       marker = L.marker([s.lat, s.lng], {
         icon: L.divIcon({ className:"plane-icon", html:"✈️", iconSize:[24,24], iconAnchor:[12,12] })
       }).addTo(layer);
+    } else if(s.num){
+      marker = L.marker([s.lat, s.lng], {
+        icon: L.divIcon({ className:"numbered-icon", html:`<span class="numbered-pin">${s.num}</span>`, iconSize:[24,24], iconAnchor:[12,12] })
+      }).addTo(layer);
     } else {
       marker = L.circleMarker([s.lat, s.lng], {
         radius: isStart ? 8 : 7,
@@ -818,8 +874,10 @@ function drawDayMap(container, day){
       }).addTo(layer);
     }
     const label = isStart ? `${s.name} · partenza` : s.name;
-    marker.bindPopup(`<strong>${label}</strong>`);
-    marker.bindTooltip(label, { permanent:true, direction:"top", offset:[0,-7], className:"map-label" });
+    marker.bindPopup(`<strong>${s.num ? s.num + ". " : ""}${label}</strong>`);
+    if(!s.num){
+      marker.bindTooltip(label, { permanent:true, direction:"top", offset:[0,-7], className:"map-label" });
+    }
     if(isStart) startMarker = marker;
   });
   if(startMarker && startMarker.bringToFront) startMarker.bringToFront();
@@ -1109,7 +1167,6 @@ function renderDayDetail(dayKey){
   const container = document.getElementById('dayDetailContent');
   const hidden = loadHiddenConfirmed();
   const moves = loadMoves();
-  const autoStops = loadAutoStops();
   const block = itineraryDays.find(d => d.day === dayKey);
   if(!block) return;
 
@@ -1117,7 +1174,7 @@ function renderDayDetail(dayKey){
     const effectiveDay = moves[s.name] || s.attachTo;
     return effectiveDay === dayKey && !hidden.includes(s.name);
   });
-  const myStops = autoStops.filter(s => s.itineraryKey === dayKey);
+  const myStops = orderedAutoStopsForDay(dayKey);
   const dayOptions = itineraryDays.map(d => `<option value="${d.day}">Giorno ${d.day} — ${d.city}</option>`).join("");
 
   container.innerHTML = `
@@ -1171,9 +1228,9 @@ function renderDayDetail(dayKey){
           <button type="button" class="stop-remove" data-remove-confirmed="${s.name}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
         </div>
       `).join("")}
-      ${myStops.map(s=>`
+      ${myStops.map((s, idx)=>`
         <div class="stop-card">
-          <div class="stamp">確</div>
+          <div class="stamp">${idx + 1}</div>
           <div class="stop-body">
             <p class="stop-name">${s.name}</p>
             <div class="stop-meta">
@@ -1185,8 +1242,16 @@ function renderDayDetail(dayKey){
               <select class="stop-move-select" data-move-auto="${s.id}" data-day="${block.day}">${dayOptions}</select>
             </div>
           </div>
-          <button type="button" class="stop-hold" data-hold-auto="${s.id}" data-day="${block.day}" title="Sposta in sospeso">⏸</button>
-          <button type="button" class="stop-remove" data-remove-auto="${s.id}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
+          <div class="stop-actions">
+            <div class="stop-actions-row">
+              <button type="button" class="stop-order-btn" data-order-up="${s.id}" data-day="${block.day}" title="Sposta su"${idx === 0 ? " disabled" : ""}>▲</button>
+              <button type="button" class="stop-order-btn" data-order-down="${s.id}" data-day="${block.day}" title="Sposta giù"${idx === myStops.length - 1 ? " disabled" : ""}>▼</button>
+            </div>
+            <div class="stop-actions-row">
+              <button type="button" class="stop-hold" data-hold-auto="${s.id}" data-day="${block.day}" title="Sposta in sospeso">⏸</button>
+              <button type="button" class="stop-remove" data-remove-auto="${s.id}" data-day="${block.day}" title="Rimuovi tappa">✕</button>
+            </div>
+          </div>
         </div>
       `).join("")}
     </div>
@@ -1203,6 +1268,12 @@ function renderDayDetail(dayKey){
   });
   container.querySelectorAll('[data-hold-auto]').forEach(btn=>{
     btn.addEventListener('click', ()=> holdAutoStop(btn.dataset.holdAuto, btn.dataset.day));
+  });
+  container.querySelectorAll('[data-order-up]').forEach(btn=>{
+    btn.addEventListener('click', ()=> moveAutoStopOrder(btn.dataset.day, btn.dataset.orderUp, -1));
+  });
+  container.querySelectorAll('[data-order-down]').forEach(btn=>{
+    btn.addEventListener('click', ()=> moveAutoStopOrder(btn.dataset.day, btn.dataset.orderDown, 1));
   });
   container.querySelectorAll('[data-move-confirmed]').forEach(sel=>{
     sel.value = sel.dataset.day;
