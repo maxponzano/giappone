@@ -221,6 +221,10 @@
         <input type="checkbox" id="newSplit" checked />
         <label for="newSplit">Da dividere</label>
       </div>
+      <div class="split-check">
+        <input type="checkbox" id="newPaid" checked />
+        <label for="newPaid">Pagato</label>
+      </div>
       <button type="submit">Aggiungi</button>
     </form>
   </div>
@@ -363,7 +367,11 @@ function getAllItems(){
   const base = baseItems
     .filter(i => !hidden.includes(i.id))
     .map(i => ({ ...i, ...(overrides[i.id]||{}) }));
-  return [...base, ...custom];
+  const all = [...base, ...custom];
+  // Le voci create prima dell'introduzione della casella "Pagato" non hanno ancora questo
+  // campo salvato: come valore di partenza usiamo lo stesso criterio di prima (un pagatore
+  // assegnato = considerata pagata), così i totali non cambiano finché non si corregge a mano.
+  return all.map(i => ({ ...i, paid: i.paid !== undefined ? i.paid : (i.paidBy !== "") }));
 }
 
 function fmtEuro(n){
@@ -417,6 +425,10 @@ function render(){
           <input type="checkbox" data-field="split" data-id="${i.id}" data-fn="${updateFn}" ${i.split ? "checked":""} ${i.paidBy==="Carta comune" ? "disabled":""} id="split_${i.id}" />
           <label for="split_${i.id}">Da dividere${i.paidBy==="Carta comune" ? " (già in comune)" : ""}</label>
         </div>
+        <div class="split-check">
+          <input type="checkbox" data-field="paid" data-id="${i.id}" data-fn="${updateFn}" ${i.paid ? "checked":""} id="paid_${i.id}" />
+          <label for="paid_${i.id}">Pagato</label>
+        </div>
       </div>
     </div>
   `;
@@ -430,7 +442,7 @@ function render(){
       const fn = el.dataset.fn === "updateCustomField" ? updateCustomField : updateBaseField;
       let value;
       if(field === "spesa") value = parseFloat(el.value) || 0;
-      else if(field === "split") value = el.checked;
+      else if(field === "split" || field === "paid") value = el.checked;
       else value = el.value;
       const patch = { [field]: value };
       if(field === "paidBy" && value === "Carta comune") patch.split = false;
@@ -441,9 +453,9 @@ function render(){
     btn.addEventListener('click', ()=> deleteItem(btn.dataset.remove));
   });
 
-  // Totale e saldo
-  const spentTotal = items.filter(i => i.paidBy !== "").reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
-  const plannedTotal = items.filter(i => i.paidBy === "").reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
+  // Totale e saldo — "Speso finora" conta solo le voci segnate come Pagato
+  const spentTotal = items.filter(i => i.paid).reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
+  const plannedTotal = items.filter(i => !i.paid).reduce((sum, i) => sum + (parseFloat(i.spesa)||0), 0);
   const grandTotal = spentTotal + plannedTotal;
   document.getElementById('spentValue').textContent = fmtEuro(spentTotal);
   document.getElementById('plannedValue').textContent = fmtEuro(plannedTotal);
@@ -512,10 +524,11 @@ document.getElementById('addForm').addEventListener('submit', (e)=>{
   const spesa = parseFloat(document.getElementById('newSpesa').value) || 0;
   const paidBy = document.getElementById('newPaidBy').value;
   const split = paidBy === "Carta comune" ? false : document.getElementById('newSplit').checked;
+  const paid = document.getElementById('newPaid').checked;
   if(!desc) return;
 
   const custom = loadCustom();
-  custom.push({ id: "custom_" + Date.now(), desc, spesa, paidBy, split });
+  custom.push({ id: "custom_" + Date.now(), desc, spesa, paidBy, split, paid });
   saveCustom(custom);
 
   document.getElementById('newDesc').value = "";
@@ -523,6 +536,7 @@ document.getElementById('addForm').addEventListener('submit', (e)=>{
   document.getElementById('newPaidBy').value = "";
   document.getElementById('newSplit').checked = true;
   document.getElementById('newSplit').disabled = false;
+  document.getElementById('newPaid').checked = true;
 
   render();
 });
