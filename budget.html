@@ -405,7 +405,7 @@ function render(){
     <div class="item">
       <div class="item-head">
         <p class="item-desc">${i.desc}</p>
-        <button type="button" class="item-remove" data-remove="${i.id}" title="Elimina spesa">✕</button>
+        <button type="button" class="item-remove" data-remove="${i.id}" data-remove-desc="${i.desc}" title="Elimina spesa">✕</button>
       </div>
       <div class="item-controls">
         <div>
@@ -450,7 +450,11 @@ function render(){
     });
   });
   list.querySelectorAll('[data-remove]').forEach(btn=>{
-    btn.addEventListener('click', ()=> deleteItem(btn.dataset.remove));
+    btn.addEventListener('click', ()=>{
+      if(confirm(`Eliminare la spesa "${btn.dataset.removeDesc}"? L'operazione non si può annullare.`)){
+        deleteItem(btn.dataset.remove);
+      }
+    });
   });
 
   // Totale e saldo — "Speso finora" conta solo le voci segnate come Pagato
