@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0E1728" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>Ricordi di viaggio — Giappone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo-950:#0E1728; --indigo-900:#131F38; --indigo-800:#1C2E4E;
+    --washi:#F1ECDF; --washi-dim:#C9C2AE;
+    --vermillion:#C1440E; --vermillion-soft:#E0693A;
+    --gold:#C9A24B; --moss:#6E8C6A; --line: rgba(241,236,223,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif; color:var(--washi);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(201,162,75,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(193,68,14,0.08), transparent 55%),
+      var(--indigo-950);
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:720px; margin:0 auto; padding:36px 20px 80px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+  .nav-link{
+    display:flex; width:fit-content; align-items:center; gap:6px;
+    background:var(--indigo-900); border:1px solid var(--line); color:var(--washi);
+    padding:8px 14px; border-radius:20px; font-size:12.5px; text-decoration:none;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .nav-link:hover{border-color:var(--gold); color:var(--gold);}
+  .nav-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .sync-status{font-size:11px; color:var(--washi-dim); margin-bottom:18px; display:flex; align-items:center; gap:6px;}
+  .sync-dot{width:7px; height:7px; border-radius:50%; background:var(--moss); display:inline-block;}
+  .sync-dot.syncing{background:var(--gold); animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--vermillion);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .sync-error-banner{
+    background:rgba(193,68,14,0.15); border:1px solid var(--vermillion);
+    color:var(--vermillion-soft); border-radius:8px; padding:10px 12px;
+    font-size:12.5px; margin-bottom:18px; line-height:1.5;
+  }
+  .eyebrow{
+    font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:"憶"; font-family:'Shippori Mincho',serif; font-size:15px; color:var(--vermillion-soft);}
+  h1{
+    font-family:'Shippori Mincho', serif; font-weight:700;
+    font-size: clamp(24px,5vw,32px); margin:0 0 6px; line-height:1.15;
+  }
+  .sub{color:var(--washi-dim); font-size:14px; margin:0 0 10px;}
+  .privacy-note{
+    font-size:12px; color:var(--washi-dim); background:rgba(201,162,75,0.08);
+    border:1px solid rgba(201,162,75,0.3); border-radius:8px; padding:10px 12px;
+    margin-bottom:22px; line-height:1.5;
+  }
+
+  .view-toggle{display:flex; gap:8px; margin-bottom:24px;}
+  .view-btn{
+    flex:1; background:var(--indigo-900); border:1px solid var(--line); color:var(--washi-dim);
+    padding:9px 12px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer;
+    font-family:'Zen Kaku Gothic New',sans-serif;
+  }
+  .view-btn.active{border-color:var(--gold); color:var(--gold); background:rgba(201,162,75,0.08);}
+
+  .day-heading{
+    font-family:'Shippori Mincho',serif; font-size:15.5px; font-weight:700; color:var(--gold);
+    margin:28px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--line);
+  }
+  .day-heading:first-of-type{margin-top:0;}
+
+  .memory-card{
+    background:linear-gradient(180deg, var(--indigo-800), var(--indigo-900));
+    border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px;
+  }
+  .memory-meta{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .memory-time{font-size:11px; color:var(--washi-dim);}
+  .memory-type{font-size:11px; color:var(--gold);}
+  .memory-media img{width:100%; border-radius:8px; display:block; cursor:pointer;}
+  .memory-media iframe{width:100%; border:none; border-radius:8px; display:block;}
+  .memory-media iframe.video-frame{aspect-ratio:16/9;}
+  .memory-media iframe.audio-frame{height:80px;}
+  .memory-caption{font-size:13.5px; color:var(--washi); margin:10px 0 0; line-height:1.5;}
+  .memory-text{font-size:14.5px; color:var(--washi); line-height:1.6; font-style:italic;}
+
+  .empty{font-size:13px; color:var(--washi-dim); font-style:italic; text-align:center; padding:40px 0;}
+  .lightbox{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:100%; max-height:100%; border-radius:8px;}
+
+  @media (max-width: 640px){
+    .wrap{padding:22px 14px 64px;}
+    h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav-row">
+    <a href="index.html" class="nav-link">← Itinerario</a>
+    <a href="emergenza.html" class="nav-link">🆘 Emergenza</a>
+  </div>
+  <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Sincronizzato</span></div>
+  <div id="syncErrorBanner" class="sync-error-banner" style="display:none;"></div>
+
+  <p class="eyebrow">Diario di viaggio</p>
+  <h1>Ricordi</h1>
+  <p class="sub">Foto, video, vocali e appunti inviati al bot Telegram durante il viaggio — raccolti qui in automatico.</p>
+  <p class="privacy-note">I file veri e propri restano su Google Drive; qui vengono mostrati solo tramite anteprima. Se il file non si vede, controlla che la cartella Drive sia condivisa con l'account con cui stai navigando.</p>
+
+  <div class="view-toggle">
+    <button class="view-btn active" id="btnTimeline">🕐 Timeline</button>
+    <button class="view-btn" id="btnByDay">📅 Per giorno</button>
+  </div>
+
+  <div id="content"><p class="empty">Caricamento ricordi…</p></div>
+</div>
+
+<div class="lightbox" id="lightbox"><img id="lightboxImg" src="" /></div>
+
+<script>
+// --- Webhook Make.com che restituisce i ricordi (sola lettura da qui) ---
+const RICORDI_URL = "https://hook.eu1.make.com/k3cosspvwr2u9jgjnii312zvryr6q5og";
+
+const TRIP_START = new Date("2026-09-10T00:00:00");
+
+function setSyncStatus(state){
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  dot.className = "sync-dot" + (state === "syncing" ? " syncing" : state === "error" ? " error" : "");
+  text.textContent = state === "syncing" ? "Caricamento..." : state === "error" ? "Impossibile caricare i ricordi (offline?)" : "Aggiornato";
+}
+
+function dayNumberFor(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr);
+  const diff = Math.floor((d - TRIP_START) / 86400000) + 1;
+  return diff >= 1 ? diff : null;
+}
+
+function formatTime(dateStr){
+  if(!dateStr) return "";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('it-IT', {day:'2-digit', month:'short'}) + " · " +
+         d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+}
+
+function iconFor(type){
+  return {photo:"📷 Foto", video:"🎥 Video", audio:"🎙️ Vocale", testo:"✍️ Nota"}[type] || type;
+}
+
+function renderMediaCard(item){
+  const el = document.createElement('div');
+  el.className = 'memory-card';
+  let mediaHtml = '';
+  const fid = item.driveFileId;
+  if(item.type === 'photo' && fid){
+    mediaHtml = `<div class="memory-media"><img src="https://drive.google.com/thumbnail?id=${fid}&sz=w1000" loading="lazy" onclick="openLightbox('https://drive.google.com/thumbnail?id=${fid}&sz=w2000')" /></div>`;
+  } else if(item.type === 'video' && fid){
+    mediaHtml = `<div class="memory-media"><iframe class="video-frame" src="https://drive.google.com/file/d/${fid}/preview" allow="autoplay"></iframe></div>`;
+  } else if(item.type === 'audio' && fid){
+    mediaHtml = `<div class="memory-media"><iframe class="audio-frame" src="https://drive.google.com/file/d/${fid}/preview"></iframe></div>`;
+  }
+  el.innerHTML = `
+    <div class="memory-meta">
+      <span class="memory-time">${formatTime(item.timestamp)}</span>
+      <span class="memory-type">${iconFor(item.type)}</span>
+    </div>
+    ${mediaHtml}
+    ${item.type === 'testo' ? `<p class="memory-text">${escapeHtml(item.text || '')}</p>` : (item.caption ? `<p class="memory-caption">${escapeHtml(item.caption)}</p>` : '')}
+  `;
+  return el;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function openLightbox(src){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightbox').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('open');
+});
+
+let allMemories = [];
+let currentView = 'timeline';
+
+function render(){
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+  if(allMemories.length === 0){
+    content.innerHTML = '<p class="empty">Nessun ricordo ancora. Invia una foto, un video o un vocale al bot Telegram del viaggio: comparirà qui.</p>';
+    return;
+  }
+  const sorted = [...allMemories].sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if(currentView === 'timeline'){
+    sorted.reverse().forEach(item => content.appendChild(renderMediaCard(item)));
+  } else {
+    const byDay = {};
+    sorted.forEach(item => {
+      const day = dayNumberFor(item.timestamp) ?? '?';
+      if(!byDay[day]) byDay[day] = [];
+      byDay[day].push(item);
+    });
+    Object.keys(byDay).sort((a,b) => Number(a) - Number(b)).forEach(day => {
+      const heading = document.createElement('div');
+      heading.className = 'day-heading';
+      heading.textContent = day === '?' ? 'Data sconosciuta' : `Giorno ${day}`;
+      content.appendChild(heading);
+      byDay[day].forEach(item => content.appendChild(renderMediaCard(item)));
+    });
+  }
+}
+
+document.getElementById('btnTimeline').addEventListener('click', () => {
+  currentView = 'timeline';
+  document.getElementById('btnTimeline').classList.add('active');
+  document.getElementById('btnByDay').classList.remove('active');
+  render();
+});
+document.getElementById('btnByDay').addEventListener('click', () => {
+  currentView = 'byDay';
+  document.getElementById('btnByDay').classList.add('active');
+  document.getElementById('btnTimeline').classList.remove('active');
+  render();
+});
+
+async function loadMemories(){
+  setSyncStatus('syncing');
+  try{
+    const res = await fetch(RICORDI_URL);
+    if(!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    allMemories = Array.isArray(data.memories) ? data.memories : [];
+    setSyncStatus('ok');
+    render();
+  }catch(e){
+    setSyncStatus('error');
+    console.warn("Impossibile caricare i ricordi", e);
+    document.getElementById('content').innerHTML = '<p class="empty">Impossibile caricare i ricordi. Controlla la connessione.</p>';
+  }
+}
+
+loadMemories();
+// Ricontrolla ogni 60s mentre la pagina resta aperta (utile durante il viaggio)
+setInterval(loadMemories, 60000);
+</script>
+</body>
+</html>
