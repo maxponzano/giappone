@@ -169,7 +169,7 @@ function renderMediaCard(item){
   let mediaHtml = '';
   const fid = item.driveFileId;
   if(item.type === 'photo' && fid){
-    mediaHtml = `<div class="memory-media"><img src="https://drive.google.com/thumbnail?id=${fid}&sz=w1000" loading="lazy" onclick="openLightbox('https://drive.google.com/thumbnail?id=${fid}&sz=w2000')" /></div>`;
+    mediaHtml = `<div class="memory-media"><img src="https://drive.google.com/uc?export=view&id=${fid}" loading="lazy" onclick="openLightbox('https://drive.google.com/uc?export=view&id=${fid}')" /></div>`;
   } else if(item.type === 'video' && fid){
     mediaHtml = `<div class="memory-media"><iframe class="video-frame" src="https://drive.google.com/file/d/${fid}/preview" allow="autoplay"></iframe></div>`;
   } else if(item.type === 'audio' && fid){
