@@ -229,6 +229,12 @@
       <button type="submit">Aggiungi</button>
     </form>
   </div>
+
+  <div class="add-panel">
+    <h2>Esporta in Excel</h2>
+    <p class="payments-sub">Scarica un file con tutte le spese — descrizione, importo, chi ha pagato, se già pagata o solo preventivata — da aprire direttamente in Excel.</p>
+    <button type="button" id="exportBtn">📊 Esporta le spese</button>
+  </div>
 </div>
 
 <script>
@@ -379,6 +385,53 @@ function fmtEuro(n){
   return "€ " + n.toLocaleString("it-IT", {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// --- Esportazione in Excel (CSV, apre direttamente senza librerie esterne) ---
+let lastSummary = {};
+
+function csvField(value){
+  const s = String(value);
+  return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csvNumber(n){
+  // Virgola come separatore decimale: è quello che Excel in italiano si aspetta in un CSV a ";"
+  return (parseFloat(n) || 0).toFixed(2).replace(".", ",");
+}
+
+function exportBudgetCsv(){
+  const items = getAllItems();
+  const rows = [];
+
+  rows.push(["Riepilogo viaggio Giappone"]);
+  rows.push(["Speso finora (pagato)", csvNumber(lastSummary.spentTotal)]);
+  rows.push(["Preventivato (non ancora pagato)", csvNumber(lastSummary.plannedTotal)]);
+  rows.push(["Totale previsto del viaggio", csvNumber(lastSummary.grandTotal)]);
+  rows.push(["Saldo tra Max e Katia", lastSummary.settlementText || ""]);
+  rows.push([]);
+
+  rows.push(["Descrizione", "Spesa (€)", "Pagato da", "Da dividere", "Stato"]);
+  items.forEach(i=>{
+    rows.push([
+      i.desc,
+      csvNumber(i.spesa),
+      i.paidBy || "—",
+      i.split ? "Sì" : "No",
+      i.paid ? "Pagato" : "Preventivato (non sostenuto)"
+    ]);
+  });
+
+  const csv = rows.map(r => r.map(csvField).join(";")).join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const today = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `budget_giappone_${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function updateBaseField(id, patch){
   const overrides = loadOverrides();
   overrides[id] = { ...(overrides[id]||{}), ...patch };
@@ -485,16 +538,21 @@ function render(){
   });
 
   const settlementEl = document.getElementById('settlement');
+  let settlementText;
   if(Math.abs(net) < 0.01){
     settlementEl.className = "summary-settlement even";
-    settlementEl.textContent = "Conti in pareggio tra Max e Katia ✓";
+    settlementText = "Conti in pareggio tra Max e Katia";
   } else if(net > 0){
     settlementEl.className = "summary-settlement";
-    settlementEl.textContent = `Katia deve a Max ${fmtEuro(net)}`;
+    settlementText = `Katia deve a Max ${fmtEuro(net)}`;
   } else {
     settlementEl.className = "summary-settlement";
-    settlementEl.textContent = `Max deve a Katia ${fmtEuro(Math.abs(net))}`;
+    settlementText = `Max deve a Katia ${fmtEuro(Math.abs(net))}`;
   }
+  settlementEl.textContent = settlementText + (Math.abs(net) < 0.01 ? " ✓" : "");
+
+  // Tiene i totali a disposizione dell'esportazione CSV, senza ricalcolarli lì
+  lastSummary = { spentTotal, plannedTotal, grandTotal, settlementText };
 
   // Elenco pagamenti diretti registrati
   const paymentsList = document.getElementById('paymentsList');
@@ -560,6 +618,8 @@ document.getElementById('paymentForm').addEventListener('submit', (e)=>{
   document.getElementById('paymentAmount').value = "";
   render();
 });
+
+document.getElementById('exportBtn').addEventListener('click', exportBudgetCsv);
 
 (async () => {
   await syncPull();
