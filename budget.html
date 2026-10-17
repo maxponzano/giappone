@@ -520,7 +520,9 @@ function render(){
   document.getElementById('grandTotalValue').textContent = fmtEuro(grandTotal);
 
   let maxPaidShared = 0, katiaPaidShared = 0;
-  items.filter(i => i.split).forEach(i=>{
+  // Il saldo conta solo le spese già pagate: una voce "da dividere" ma ancora
+  // Preventivata non deve spostare quanto Max/Katia si devono a vicenda.
+  items.filter(i => i.split && i.paid).forEach(i=>{
     const amt = parseFloat(i.spesa) || 0;
     if(i.paidBy === "Max") maxPaidShared += amt;
     if(i.paidBy === "Katia") katiaPaidShared += amt;
